@@ -10,9 +10,8 @@ import json
 
 
 class PartImageDataset(Dataset):
-    def __init__(self, image_folder, model, vis_processors, txt_processors, device):
+    def __init__(self, image_folder, vis_processors, txt_processors, device):
         self.image_folder = image_folder
-        self.model = model
         self.vis_processors = vis_processors
         self.txt_processors = txt_processors
         self.image_list = glob.glob(self.image_folder + '/*.png')[:1000]
@@ -32,10 +31,16 @@ class PartImageDataset(Dataset):
         return img_id, image, text_input
 
 
-def get_emb(dataloader):
+def get_emb(dataloader, model):
+    """
+    Get the ids and the embeddings from the dataloader
+    :param dataloader: batch load the images
+    :param model: the encoder, e.g. CLIP
+    :return: the list of the image embedding ids and the concatenated image embeddings
+    """
     total_img_id_list = []
     batch_emb_list = []
-    for i, (batch_img_id, batch_image, batch_text_input) in tqdm(enumerate(imageloader, 0)):
+    for i, (batch_img_id, batch_image, batch_text_input) in tqdm(enumerate(dataloader, 0)):
         samples = {"image": batch_image, "text_input": list(batch_text_input)}
         features = model.extract_features(samples)
         features_image = features.image_embeds   # [bs, 512]
@@ -49,6 +54,14 @@ def get_emb(dataloader):
 
 
 def save_emb_to_file(ids, embs, dirname, vid):
+    """
+    Save embeddings to file
+    :param ids: the list of the image embedding ids
+    :param embs: the concatenated image embeddings
+    :param dirname: directory that the files will be saved to
+    :param vid: view id of the images
+    :return: None
+    """
     print(embs.shape)
     print(f'Saving embeddings to {dirname}/clip_emb_{vid}.pt')
     torch.save(embs, dirname+'/'+f'clip_emb_{vid}.pt')
@@ -76,10 +89,10 @@ if __name__ == '__main__':
     # print(vis_processors)
 
     # Instantiate the dataset and the dataloader
-    images = PartImageDataset(args.image_folder, model, vis_processors, txt_processors, device)
+    images = PartImageDataset(args.image_folder, vis_processors, txt_processors, device)
     imageloader = data.DataLoader(images, shuffle=False, batch_size=32)
 
-    image_ids, image_embs = get_emb(imageloader)
+    image_ids, image_embs = get_emb(imageloader, model)
 
     vid = args.image_folder.split('/')[-1]
     save_emb_to_file(image_ids, image_embs, '../emb', vid)
