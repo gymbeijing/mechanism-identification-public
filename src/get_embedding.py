@@ -6,6 +6,7 @@ import glob
 from PIL import Image
 import torch.utils.data as data
 from tqdm import tqdm
+import json
 
 
 class PartImageDataset(Dataset):
@@ -14,7 +15,7 @@ class PartImageDataset(Dataset):
         self.model = model
         self.vis_processors = vis_processors
         self.txt_processors = txt_processors
-        self.image_list = glob.glob(self.image_folder + '/*.png')
+        self.image_list = glob.glob(self.image_folder + '/*.png')[:1000]
 
     def __len__(self):
         return len(self.image_list)
@@ -52,10 +53,12 @@ def save_emb_to_file(ids, embs, dirname, vid):
     print(f'Saving embeddings to {dirname}/clip_emb_{vid}.pt')
     torch.save(embs, dirname+'/'+f'clip_emb_{vid}.pt')
     print(len(ids))
-    print(f'Saving embeddings to {dirname}/emb_idx_{vid}.txt')
-    with open(dirname+'/'+f'emb_idx_{vid}.txt', 'w') as f:
-        for index in ids:
-            f.write(f"{index}\n")
+    print(f'Saving embeddings to {dirname}/emb_idx_{vid}.json')
+    # with open(dirname+'/'+f'emb_idx_{vid}.txt', 'w') as f:
+    #     for index in ids:
+    #         f.write(f"{index}\n")
+    with open(dirname+'/'+f'emb_idx_{vid}.json', 'w', encoding='utf8') as fp:
+        json.dump(ids, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
     return
 
@@ -74,7 +77,7 @@ if __name__ == '__main__':
 
     # Instantiate the dataset and the dataloader
     images = PartImageDataset(args.image_folder, model, vis_processors, txt_processors, device)
-    imageloader = data.DataLoader(images, shuffle=False, batch_size=64)
+    imageloader = data.DataLoader(images, shuffle=False, batch_size=32)
 
     image_ids, image_embs = get_emb(imageloader)
 
