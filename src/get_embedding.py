@@ -5,6 +5,7 @@ import argparse
 import glob
 from PIL import Image
 import torch.utils.data as data
+from tqdm import tqdm
 
 
 class PartImageDataset(Dataset):
@@ -19,7 +20,8 @@ class PartImageDataset(Dataset):
         return len(self.image_list)
 
     def __getitem__(self, idx):
-        raw_image = Image.open(self.image_list[idx])
+        img_name = self.image_list[idx]
+        raw_image = Image.open(img_name)
         caption = ""
         image = vis_processors["eval"](raw_image).unsqueeze(0).to(device)
         text_input = txt_processors["eval"](caption)
@@ -28,10 +30,34 @@ class PartImageDataset(Dataset):
         features = model.extract_features(sample)
         features_image = features.image_embeds
 
-        return features_image
+        img_id = img_name.split('/')[-1].split('.')[0]  # remove the .png from the image name
+
+        return img_id, features_image
+
+
+def save_emb_to_file(imageloader, dirname, vid):
+    total_img_id_list = []
+    batch_emb_list = []
+    for i, (batch_img_id, batch_emb) in tqdm(enumerate(imageloader, 0)):
+        # print(f'Processing the {i}-th batch')
+        total_img_id_list += list(batch_img_id)
+        batch_emb_list.append(batch_emb)
+
+    total_emb = torch.cat(batch_emb_list, dim=0)
+    print(total_emb.shape)
+    print(f'Saving embeddings to {dirname}/clip_emb_{vid}.pt')
+    torch.save(total_emb, dirname+'/'+f'clip_emb_{vid}.pt')
+    print(len(total_img_id_list))
+    print(f'Saving embeddings to {dirname}/emb_idx_{vid}.txt')
+    with open(dirname+'/'+f'emb_idx_{vid}.txt', 'w') as f:
+        for index in total_img_id_list:
+            f.write(f"{index}\n")
+
+    return
 
 
 if __name__ == '__main__':
+    # Parse the arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_folder', type=str, help='Path to the directory that saves part images')
     args = parser.parse_args()
@@ -42,12 +68,9 @@ if __name__ == '__main__':
                                                                       is_eval=True, device=device)
     # print(vis_processors)
 
+    # Instantiate the dataset and the dataloader
     images = PartImageDataset(args.image_folder, model, vis_processors, txt_processors, device)
-    imageloader = data.DataLoader(images, shuffle=False, batch_size=32)
+    imageloader = data.DataLoader(images, shuffle=False, batch_size=64)
 
-    batch_emb_list = []
-    for i, batch_emb in enumerate(imageloader, 0):
-        batch_emb_list.append(batch_emb)
-
-    total_emb = torch.cat(batch_emb_list, dim=0)
-    print(total_emb.shape)
+    vid = args.image_folder.split('/')[-1]
+    save_emb_to_file(imageloader, args.image_folder, vid)
