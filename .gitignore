@@ -1,8 +1,5 @@
 .idea
 .DS_Store
-git_init.sh
-venv_py39
 venv_py38
-venv_py37
 raw_data
 emb
