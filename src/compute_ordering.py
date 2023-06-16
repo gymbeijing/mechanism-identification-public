@@ -115,7 +115,7 @@ def compute_route(centers):
     return permutation
 
 
-def assign_order(img_embs, assembly_id_dict, centers, route):
+def assign_order(img_embs, assembly_id_dict, metadata_list, centers, route):
     # Compute line segments between two adjacent nodes on the route
     segments = dict()
     for i in range(len(route)):
@@ -136,7 +136,7 @@ def assign_order(img_embs, assembly_id_dict, centers, route):
         emb_order_info_slice = emb_order_info_list[indexes[0]:indexes[-1]+1]
         sorted_parts = sorted(enumerate(emb_order_info_slice), key=lambda d: (d[1]['seg_id_order'], d[1]['proj_dist']))
         # print(sorted_parts)
-        ordered_assembly_parts[assembly_id] = [indexes[i] for i, _ in sorted_parts]
+        ordered_assembly_parts[assembly_id] = [metadata_list[indexes[i]] for i, _ in sorted_parts]
 
     return ordered_assembly_parts
 
@@ -156,6 +156,14 @@ def compute_segment_id(emb, segments, route):
     projected_dist = math.dist(emb, nearest)
 
     return closest_seg_id_order, projected_dist
+
+
+def save_orders_to_file(orders, dirname, vid):
+    print(f'Saving part orders to {dirname}/part_orders_{vid}.json')
+    with open(dirname+'/'+f'part_orders_{vid}.json', 'w', encoding='utf8') as fp:
+        json.dump(orders, fp, indent=4, ensure_ascii=False, sort_keys=False)
+
+    return
 
 
 if __name__ == '__main__':
@@ -191,5 +199,6 @@ if __name__ == '__main__':
         else:
             assembly_id_dict[assembly_id].append(idx)
 
-    orders = assign_order(img_embs, assembly_id_dict, centers, route)
-    print(orders)
+    orders = assign_order(img_embs, assembly_id_dict, metadata, centers, route)
+    vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
+    save_orders_to_file(orders, '../processed_data', vid)
