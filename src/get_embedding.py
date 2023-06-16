@@ -14,7 +14,7 @@ class PartImageDataset(Dataset):
         self.image_folder = image_folder
         self.vis_processors = vis_processors
         self.txt_processors = txt_processors
-        self.image_list = glob.glob(self.image_folder + '/*.png')[:1000]
+        self.image_list = sorted(glob.glob(self.image_folder + '/*.png'))[:1000]   # sorted() to get the file names in alphabetical order
 
     def __len__(self):
         return len(self.image_list)
