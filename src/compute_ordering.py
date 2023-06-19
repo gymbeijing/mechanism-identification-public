@@ -146,17 +146,9 @@ def assign_order(img_embs, assembly_id_dict, metadata_list, centers, route):
         emb_order_info_list.append({'seg_id_order': emb_segment_id, 'proj_dist': emb_projected_dist})
 
     # print(emb_order_info_list)
-    all_sorted_parts = sorted(enumerate(emb_order_info_list), key=lambda d: (d[1]['seg_id_order'], d[1]['proj_dist']))
+    # all_sorted_parts = sorted(enumerate(emb_order_info_list), key=lambda d: (d[1]['seg_id_order'], d[1]['proj_dist']))
 
-    cur_seg_id = 0
-    closest_id_list = []
-    for img_idx, order_info in all_sorted_parts:
-        if order_info['seg_id_order'] != cur_seg_id:
-            closest_id_list.append(metadata_list[img_idx])
-            cur_seg_id = order_info['seg_id_order']
-    print(closest_id_list)
-
-    all_ordered_assembly_parts = [metadata_list[i] for i, _ in all_sorted_parts]
+    # all_ordered_assembly_parts = [metadata_list[i] for i, _ in all_sorted_parts]
     # with open('../processed_data' + '/' + f'all_part_orders.json', 'w', encoding='utf8') as fp:
     #     json.dump(all_ordered_assembly_parts, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
@@ -204,6 +196,22 @@ def save_orders_to_file(orders, dirname, vid):
     return
 
 
+def compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata):
+    # print(cluster_labels)
+    closest_img_embs_name = dict()
+    cluster_labels = np.array(cluster_labels)
+    for c_idx in range(25):
+        indexes = np.where(cluster_labels == c_idx)[0]
+        print(len(indexes))
+        shortest_dist = 10000000
+        for img_idx in indexes:
+            if math.dist(centers[c_idx], img_embs[img_idx]) < shortest_dist:
+                closest_img_embs_name[c_idx] = metadata[img_idx]
+                shortest_dist = math.dist(centers[c_idx], img_embs[img_idx])
+
+    return closest_img_embs_name
+
+
 if __name__ == '__main__':
     # Parse the arguments
     parser = argparse.ArgumentParser()
@@ -225,6 +233,10 @@ if __name__ == '__main__':
     # Load assembly ids from the metadata
     with open(args.metadata_path, 'r') as f:
         metadata = json.load(f)
+
+    cluster_labels = kmeans.labels_
+    closest_img_embs_name = compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
+    print(closest_img_embs_name)
 
     assembly_id_dict = dict()
     for idx in range(len(metadata)):
