@@ -64,32 +64,32 @@ def add(v, w):
 # distance from pnt to the line and the coordinates of the
 # nearest point on the line.
 #
-# 1  Convert the line segment to a vector ('line_vec').
-# 2  Create a vector connecting start to pnt ('pnt_vec').
-# 3  Find the length of the line vector ('line_len').
-# 4  Convert line_vec to a unit vector ('line_unitvec').
-# 5  Scale pnt_vec by line_len ('pnt_vec_scaled').
-# 6  Get the dot product of line_unitvec and pnt_vec_scaled ('t').
-# 7  Ensure t is in the range 0 to 1.
-# 8  Use t to get the nearest location on the line to the end
-#    of vector pnt_vec_scaled ('nearest').
-# 9  Calculate the distance from nearest to pnt_vec_scaled.
-# 10 Translate nearest back to the start/end line.
 # Malcolm Kesson 16 Dec 2012
 
 def pnt2line(pnt, start, end):
+    # 1  Convert the line segment to a vector ('line_vec').
     line_vec = vector(start, end)
+    # 2  Create a vector connecting start to pnt ('pnt_vec').
     pnt_vec = vector(start, pnt)
+    # 3  Find the length of the line vector ('line_len').
     line_len = length(line_vec)
+    # 4  Convert line_vec to a unit vector ('line_unitvec').
     line_unitvec = unit(line_vec)
+    # 5  Scale pnt_vec by line_len ('pnt_vec_scaled').
     pnt_vec_scaled = scale(pnt_vec, 1.0 / line_len)
+    # 6  Get the dot product of line_unitvec and pnt_vec_scaled ('t').
     t = dot(line_unitvec, pnt_vec_scaled)
+    # 7  Ensure t is in the range 0 to 1.
     if t < 0.0:
         t = 0.0
     elif t > 1.0:
         t = 1.0
+    # 8  Use t to get the nearest location on the line to the end
+    #    of vector pnt_vec_scaled ('nearest').
     nearest = scale(line_vec, t)
+    # 9  Calculate the distance from nearest to pnt_vec_scaled.
     dist = distance(nearest, pnt_vec)
+    # 10 Translate nearest back to the start/end line.
     nearest = add(nearest, start)
     return dist, nearest
 
@@ -107,6 +107,11 @@ def compute_center(img_embs, mthd):
 
 
 def compute_route(centers):
+    """
+    Compute the TSP route
+    :param centers: the found clustering centers among the embeddings
+    :return: a list of the centers (in ordinal number) in the order of TSP route
+    """
     dist_matrix = distance_matrix(centers, centers, p=2)
     print(dist_matrix.shape)
     permutation, distance = solve_tsp(dist_matrix)
@@ -116,7 +121,17 @@ def compute_route(centers):
 
 
 def assign_order(img_embs, assembly_id_dict, metadata_list, centers, route):
+    """
+    Assign orders to the parts in each assembly
+    :param img_embs: torch.Tensor, all the image embeddings
+    :param assembly_id_dict: {assembly_id: indexes of the image embedding that belongs to this assembly}
+    :param metadata_list: list of the metadata corresponding to the image
+    :param centers: torch.Tensor, computed clustering centers
+    :param route: a list of ordinal numbers representing the TSP route found from the centers
+    :return: {assembly_id: [ordered_part1_metadata, ordered_part2_meta_data ...]}
+    """
     # Compute line segments between two adjacent nodes on the route
+    # Use the ordinal number, start and the end node's embedding as the representation of the line segment
     segments = dict()
     for i in range(len(route)):
         if i + 1 < len(route):
@@ -124,36 +139,59 @@ def assign_order(img_embs, assembly_id_dict, metadata_list, centers, route):
 
     segments[len(route) - 1] = {'start': centers[route[-1]], 'end': centers[route[0]]}
 
+    # Compute the ordering helping information of each image embedding
     emb_order_info_list = []
     for emb in img_embs:
         emb_segment_id, emb_projected_dist = compute_segment_id(emb, segments, route)
         emb_order_info_list.append({'seg_id_order': emb_segment_id, 'proj_dist': emb_projected_dist})
 
+    # print(emb_order_info_list)
+    all_sorted_parts = sorted(enumerate(emb_order_info_list), key=lambda d: (d[1]['seg_id_order'], d[1]['proj_dist']))
+
+    cur_seg_id = 0
+    closest_id_list = []
+    for img_idx, order_info in all_sorted_parts:
+        if order_info['seg_id_order'] != cur_seg_id:
+            closest_id_list.append(metadata_list[img_idx])
+            cur_seg_id = order_info['seg_id_order']
+    print(closest_id_list)
+
+    all_ordered_assembly_parts = [metadata_list[i] for i, _ in all_sorted_parts]
+    # with open('../processed_data' + '/' + f'all_part_orders.json', 'w', encoding='utf8') as fp:
+    #     json.dump(all_ordered_assembly_parts, fp, indent=4, ensure_ascii=False, sort_keys=False)
+
+    # Compute the orders of the parts for each assembly
     ordered_assembly_parts = dict()
     for assembly_id, indexes in assembly_id_dict.items():
         # print(f"{assembly_id}: {indexes}")
         # print(emb_order_info_list[indexes[0]:indexes[-1]+1])
         emb_order_info_slice = emb_order_info_list[indexes[0]:indexes[-1]+1]
         sorted_parts = sorted(enumerate(emb_order_info_slice), key=lambda d: (d[1]['seg_id_order'], d[1]['proj_dist']))
-        # print(sorted_parts)
         ordered_assembly_parts[assembly_id] = [metadata_list[indexes[i]] for i, _ in sorted_parts]
 
     return ordered_assembly_parts
 
 
 def compute_segment_id(emb, segments, route):
+    """
+    Compute the assigned line segment and projected distance of an embedding
+    :param emb: the embedding to be assigned line segment
+    :param segments: {ordered_segment_id: {'start': <start_node_embedding>, 'end': <end_node_embedding>}}
+    :param route: the computed TSP route
+    :return: the closest segment's id emb gets assigned to, and the projected distance between the starting node and the
+    nearest point
+    """
     shortest_dist = 10000000
     closest_seg_id_order = 0
     nearest = np.zeros_like(emb)
     for seg_id, seg in segments.items():
-    #     dist = norm(np.cross(seg['start'] - seg['end'], seg['end'] - emb)) / norm(seg['start'] - seg['end'])
         dist, proj_pnt = pnt2line(emb, seg['start'], seg['end'])
         if dist < shortest_dist:
             shortest_dist = dist
             closest_seg_id_order = route[seg_id]
             nearest = proj_pnt
     # projected_dist = math.sqrt(math.pow(math.dist(emb, segments[closest_seg_id]), 2) + math.pow(shortest_dist, 2))
-    projected_dist = math.dist(emb, nearest)
+    projected_dist = math.dist(segments[closest_seg_id_order]['start'], nearest)
 
     return closest_seg_id_order, projected_dist
 
@@ -180,7 +218,7 @@ if __name__ == '__main__':
     kmeans = KMeans(n_clusters=25, random_state=0, n_init="auto")
     centers = compute_center(img_embs, kmeans)
 
-    # Calculate TSP route
+    # Calculate the TSP route
     route = compute_route(centers)
     print(route)
 
@@ -201,4 +239,4 @@ if __name__ == '__main__':
 
     orders = assign_order(img_embs, assembly_id_dict, metadata, centers, route)
     vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
-    save_orders_to_file(orders, '../processed_data', vid)
+    # save_orders_to_file(orders, '../processed_data', vid)
