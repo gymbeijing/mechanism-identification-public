@@ -7,6 +7,7 @@ from PIL import Image
 import torch.utils.data as data
 from tqdm import tqdm
 import json
+import os
 
 
 class PartImageDataset(Dataset):
@@ -14,7 +15,7 @@ class PartImageDataset(Dataset):
         self.image_folder = image_folder
         self.vis_processors = vis_processors
         self.txt_processors = txt_processors
-        self.image_list = sorted(glob.glob(self.image_folder + '/*.png'))[:1000]   # sorted() to get the file names in alphabetical order
+        self.image_list = sorted(glob.glob(self.image_folder + '/*.png'))   # sorted() to get the file names in alphabetical order
 
     def __len__(self):
         return len(self.image_list)
@@ -41,12 +42,15 @@ def get_emb(dataloader, model):
     total_img_id_list = []
     batch_emb_list = []
     for i, (batch_img_id, batch_image, batch_text_input) in tqdm(enumerate(dataloader, 0)):
+        #os.system('nvidia-smi')
+        #print(torch.cuda.memory_allocated())
         samples = {"image": batch_image, "text_input": list(batch_text_input)}
         features = model.extract_features(samples)
         features_image = features.image_embeds   # [bs, 512]
 
         total_img_id_list += list(batch_img_id)
-        batch_emb_list.append(features_image)
+        batch_emb_list.append(features_image.detach().cpu())   # .detach().cpu() is to free up gpu memory, otherwise will run into OOM issue
+
 
     total_emb = torch.cat(batch_emb_list, dim=0)
 
@@ -83,14 +87,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(device)
+    print(device)
     model, vis_processors, txt_processors = load_model_and_preprocess(name='clip_feature_extractor', model_type="base",
                                                                       is_eval=True, device=device)
     # print(vis_processors)
 
     # Instantiate the dataset and the dataloader
     images = PartImageDataset(args.image_folder, vis_processors, txt_processors, device)
-    imageloader = data.DataLoader(images, shuffle=False, batch_size=32)
+    imageloader = data.DataLoader(images, shuffle=False, batch_size=64)
 
     image_ids, image_embs = get_emb(imageloader, model)
 
