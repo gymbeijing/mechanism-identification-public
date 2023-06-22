@@ -10,8 +10,10 @@ import json
 from numpy.linalg import norm
 import numpy as np
 import math
+from sklearn.metrics import silhouette_score
 
-import math
+
+NUM_CLUSTERS = 25
 
 
 def dot(v, w):
@@ -103,7 +105,7 @@ def compute_center(img_embs, mthd):
     """
     mthd = mthd.fit(img_embs)
     centers = mthd.cluster_centers_
-    return centers
+    return centers, mthd
 
 
 def compute_route(centers):
@@ -113,7 +115,7 @@ def compute_route(centers):
     :return: a list of the centers (in ordinal number) in the order of TSP route
     """
     dist_matrix = distance_matrix(centers, centers, p=2)
-    print(dist_matrix.shape)
+    #print(dist_matrix.shape)
     permutation, distance = solve_tsp(dist_matrix)
     # print(distance)
 
@@ -200,9 +202,9 @@ def compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
     # print(cluster_labels)
     closest_img_embs_name = dict()
     cluster_labels = np.array(cluster_labels)
-    for c_idx in range(25):
+    for c_idx in range(NUM_CLUSTERS):
         indexes = np.where(cluster_labels == c_idx)[0]
-        print(len(indexes))
+        #print(len(indexes))
         shortest_dist = 10000000
         for img_idx in indexes:
             if math.dist(centers[c_idx], img_embs[img_idx]) < shortest_dist:
@@ -215,17 +217,27 @@ def compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
 if __name__ == '__main__':
     # Parse the arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--embedding_path', type=str, help='Path to the file that saves part images')
-    parser.add_argument('--metadata_path', type=str, help='Path to the file that saves embedding metadata')
+    parser.add_argument('--embedding_path', type=str, help='Path to the file that stores part images')
+    parser.add_argument('--metadata_path', type=str, help='Path to the file that stores embedding metadata')
     args = parser.parse_args()
 
     # Load in image embeddings
-    img_embs = torch.load(args.embedding_path).detach().numpy()
+    #img_embs = torch.load(args.embedding_path).detach().numpy()
+    img_embs = torch.load(args.embedding_path).numpy()
 
     # Calculate embedding centers
-    kmeans = KMeans(n_clusters=25, random_state=0, n_init="auto")
-    centers = compute_center(img_embs, kmeans)
+    '''
+	for num_clusters in [15, 20, 25, 30]:
+        kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init="auto")
+        centers, kmeans = compute_center(img_embs, kmeans)
+        cluster_labels = kmeans.labels_
+        print(f'Silhouette Score(n={num_clusters}): {silhouette_score(img_embs, cluster_labels)}')
+    '''
 
+    kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init="auto")
+    centers, kmeans = compute_center(img_embs, kmeans)
+    cluster_labels = kmeans.labels_
+    
     # Calculate the TSP route
     route = compute_route(centers)
     print(route)
@@ -234,10 +246,11 @@ if __name__ == '__main__':
     with open(args.metadata_path, 'r') as f:
         metadata = json.load(f)
 
-    cluster_labels = kmeans.labels_
+	# Compute the closest img to the cluster
     closest_img_embs_name = compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
     print(closest_img_embs_name)
 
+	# Compute the dict mapping assembly id to the list of indexes of the part belonging to the assembly
     assembly_id_dict = dict()
     for idx in range(len(metadata)):
         m = metadata[idx]
@@ -249,6 +262,8 @@ if __name__ == '__main__':
         else:
             assembly_id_dict[assembly_id].append(idx)
 
+	# Assign order to the parts in each assembly
     orders = assign_order(img_embs, assembly_id_dict, metadata, centers, route)
     vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
-    # save_orders_to_file(orders, '../processed_data', vid)
+    save_orders_to_file(orders, '../processed_data', vid)
+    
