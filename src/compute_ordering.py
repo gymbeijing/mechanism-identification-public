@@ -14,16 +14,12 @@ import numpy as np
 import math
 from sklearn.metrics import silhouette_score
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+import umap
 
 
 NUM_CLUSTERS = 25
-logger = logging.getLogger('compute_ordering')
-logger.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
 
 
 def dot(v, w):
@@ -225,8 +221,20 @@ def compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
 
 
 def reduce_dimension(X, d):
+    # PCA
+    logging.info('Using PCA...')
     pca = PCA(n_components=d)
     X_new = pca.fit_transform(X)
+
+    # TSNE
+    #logging.info('Using TSNE...')
+    #tsne = TSNE(n_components=d)
+    #X_new = tsne.fit_transform(X_new)
+    
+    # UMAP	
+    #logging.info('Using UMAP...')
+    #m = umap.UMAP(n_components=5)
+    #X_new = m.fit_transform(X)
     
     return X_new
 
@@ -243,27 +251,28 @@ if __name__ == '__main__':
     img_embs = torch.load(args.embedding_path).numpy()
 
     # Dimensionality reduction
-    reduced_dimension = 50
+    reduced_dimension = 5
     img_embs = reduce_dimension(img_embs, d=reduced_dimension)
-    print(f"Image embedding dimension reduced to {reduced_dimension}")
+    logging.info(f"Image embedding dimension reduced to {reduced_dimension} by PCA")
     # Calculate embedding centers
-    
-    for num_clusters in [15, 20, 25, 30]:
-        print(f'kmeans with num_clusters={num_clusters}')
+    '''    
+    for num_clusters in [5, 10, 15, 20, 25, 30, 35, 40]:
+        logging.info(f'kmeans with num_clusters={num_clusters}')
         kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init="auto")
         centers, kmeans = compute_center(img_embs, kmeans)
         cluster_labels = kmeans.labels_
-        print(f'Silhouette Score(n={num_clusters}): {silhouette_score(img_embs, cluster_labels)}')
-    
+        logging.info(f'Silhouette Score(n={num_clusters}): {silhouette_score(img_embs, cluster_labels)}')
     '''
+    ''' 
     for min_cluster_size in [1250, 2500, 3500, 4500]:
+        logging.info(f'hdbscan with min_cluster_size={min_cluster_size}')
         clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size)
         cluster_labels = clusterer.fit_predict(img_embs)
-        logger.info(f'Silhouette Score(n={min_cluster_size}): {silhouette_score(img_embs, cluster_labels)}')
+        logging.info(f'Silhouette Score(n={min_cluster_size}): {silhouette_score(img_embs, cluster_labels)}')
     '''
 
-    '''
-    kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init="auto")
+    
+    kmeans = KMeans(n_clusters=NUM_CLUSTERS, random_state=0, n_init="auto")
     centers, kmeans = compute_center(img_embs, kmeans)
     cluster_labels = kmeans.labels_
     
@@ -274,11 +283,12 @@ if __name__ == '__main__':
     # Load assembly ids from the metadata
     with open(args.metadata_path, 'r') as f:
         metadata = json.load(f)
-
+    
 	# Compute the closest img to the cluster
     closest_img_embs_name = compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
     print(closest_img_embs_name)
 
+    
 	# Compute the dict mapping assembly id to the list of indexes of the part belonging to the assembly
     assembly_id_dict = dict()
     for idx in range(len(metadata)):
@@ -295,4 +305,4 @@ if __name__ == '__main__':
     orders = assign_order(img_embs, assembly_id_dict, metadata, centers, route)
     vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
     save_orders_to_file(orders, '../processed_data', vid)
-   ''' 
+    
