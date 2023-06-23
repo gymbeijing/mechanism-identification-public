@@ -1,7 +1,9 @@
 import argparse
+import logging
 
 import torch
 from sklearn.cluster import KMeans
+import hdbscan
 from scipy.spatial import distance_matrix
 # from python_tsp.exact import solve_tsp_dynamic_programming
 # from python_tsp.heuristics import solve_tsp_local_search as solve_tsp
@@ -11,9 +13,17 @@ from numpy.linalg import norm
 import numpy as np
 import math
 from sklearn.metrics import silhouette_score
+from sklearn.decomposition import PCA
 
 
 NUM_CLUSTERS = 25
+logger = logging.getLogger('compute_ordering')
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 
 def dot(v, w):
@@ -191,7 +201,7 @@ def compute_segment_id(emb, segments, route):
 
 
 def save_orders_to_file(orders, dirname, vid):
-    print(f'Saving part orders to {dirname}/part_orders_{vid}.json')
+    logger.info(f'Saving part orders to {dirname}/part_orders_{vid}.json')
     with open(dirname+'/'+f'part_orders_{vid}.json', 'w', encoding='utf8') as fp:
         json.dump(orders, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
@@ -214,6 +224,13 @@ def compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
     return closest_img_embs_name
 
 
+def reduce_dimension(X, d):
+    pca = PCA(n_components=d)
+    X_new = pca.fit_transform(X)
+    
+    return X_new
+
+
 if __name__ == '__main__':
     # Parse the arguments
     parser = argparse.ArgumentParser()
@@ -225,15 +242,27 @@ if __name__ == '__main__':
     #img_embs = torch.load(args.embedding_path).detach().numpy()
     img_embs = torch.load(args.embedding_path).numpy()
 
+    # Dimensionality reduction
+    reduced_dimension = 50
+    img_embs = reduce_dimension(img_embs, d=reduced_dimension)
+    print(f"Image embedding dimension reduced to {reduced_dimension}")
     # Calculate embedding centers
-    '''
-	for num_clusters in [15, 20, 25, 30]:
+    
+    for num_clusters in [15, 20, 25, 30]:
+        print(f'kmeans with num_clusters={num_clusters}')
         kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init="auto")
         centers, kmeans = compute_center(img_embs, kmeans)
         cluster_labels = kmeans.labels_
         print(f'Silhouette Score(n={num_clusters}): {silhouette_score(img_embs, cluster_labels)}')
+    
+    '''
+    for min_cluster_size in [1250, 2500, 3500, 4500]:
+        clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size)
+        cluster_labels = clusterer.fit_predict(img_embs)
+        logger.info(f'Silhouette Score(n={min_cluster_size}): {silhouette_score(img_embs, cluster_labels)}')
     '''
 
+    '''
     kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init="auto")
     centers, kmeans = compute_center(img_embs, kmeans)
     cluster_labels = kmeans.labels_
@@ -266,4 +295,4 @@ if __name__ == '__main__':
     orders = assign_order(img_embs, assembly_id_dict, metadata, centers, route)
     vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
     save_orders_to_file(orders, '../processed_data', vid)
-    
+   ''' 
