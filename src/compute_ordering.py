@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 
 import torch
 from sklearn.cluster import KMeans
@@ -19,6 +20,7 @@ import umap
 
 
 NUM_CLUSTERS = 25
+REDUCED_DIM = 5
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
 
 
@@ -196,9 +198,9 @@ def compute_segment_id(emb, segments, route):
     return closest_seg_id_order, projected_dist
 
 
-def save_orders_to_file(orders, dirname, vid):
-    logger.info(f'Saving part orders to {dirname}/part_orders_{vid}.json')
-    with open(dirname+'/'+f'part_orders_{vid}.json', 'w', encoding='utf8') as fp:
+def save_orders_to_file(orders, dirname):
+    logging.info(f'Saving part orders to {dirname}/part_orders.json')
+    with open(dirname+'/'+f'part_orders.json', 'w', encoding='utf8') as fp:
         json.dump(orders, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
     return
@@ -222,7 +224,7 @@ def compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
 
 def reduce_dimension(X, d):
     # PCA
-    logging.info('Using PCA...')
+    logging.info('Using PCA to reduce dimension...')
     pca = PCA(n_components=d)
     X_new = pca.fit_transform(X)
 
@@ -239,6 +241,25 @@ def reduce_dimension(X, d):
     return X_new
 
 
+def save_cluster_info(labels, metadata, dirname):
+    cluster_image_name_dict = dict()
+    assert len(labels)==len(metadata), "The number of labels is not equal to the number of items in the metadata"
+    logging.info(f'Length of labels: {len(labels)}')
+
+    for i, label in enumerate(labels):
+        if label not in cluster_image_name_dict:
+            cluster_image_name_dict[label.item()] = [metadata[i]]
+        else:
+            cluster_image_name_dict[label.item()].append(metadata[i])
+
+    logging.info(f'Saving cluster_info to {dirname}/cluster_info.json')
+    with open(f'{dirname}/cluster_info.json', 'w', encoding='utf8') as fp:
+        json.dump(cluster_image_name_dict, fp, indent=4, ensure_ascii=False, sort_keys=False)
+
+    return
+    
+
+
 if __name__ == '__main__':
     # Parse the arguments
     parser = argparse.ArgumentParser()
@@ -251,9 +272,8 @@ if __name__ == '__main__':
     img_embs = torch.load(args.embedding_path).numpy()
 
     # Dimensionality reduction
-    reduced_dimension = 5
-    img_embs = reduce_dimension(img_embs, d=reduced_dimension)
-    logging.info(f"Image embedding dimension reduced to {reduced_dimension} by PCA")
+    img_embs = reduce_dimension(img_embs, d=REDUCED_DIM)
+    logging.info(f"Image embedding dimension reduced to {REDUCED_DIM} by PCA")
     # Calculate embedding centers
     '''    
     for num_clusters in [5, 10, 15, 20, 25, 30, 35, 40]:
@@ -276,20 +296,25 @@ if __name__ == '__main__':
     centers, kmeans = compute_center(img_embs, kmeans)
     cluster_labels = kmeans.labels_
     
-    # Calculate the TSP route
-    route = compute_route(centers)
-    print(route)
 
     # Load assembly ids from the metadata
     with open(args.metadata_path, 'r') as f:
         metadata = json.load(f)
     
-	# Compute the closest img to the cluster
+    # Compute the closest img to the cluster
     closest_img_embs_name = compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
+    logging.info(f'Printing the closest image embedding to each cluster...')
     print(closest_img_embs_name)
 
+    save_cluster_info(cluster_labels, metadata, '../processed_data')
+
+    sys.exit()
+
+    # Calculate the TSP route
+    route = compute_route(centers)
+    print(route)
     
-	# Compute the dict mapping assembly id to the list of indexes of the part belonging to the assembly
+    # Compute the dict mapping assembly id to the list of indexes of the part belonging to the assembly
     assembly_id_dict = dict()
     for idx in range(len(metadata)):
         m = metadata[idx]
@@ -301,8 +326,8 @@ if __name__ == '__main__':
         else:
             assembly_id_dict[assembly_id].append(idx)
 
-	# Assign order to the parts in each assembly
+    # Assign order to the parts in each assembly
     orders = assign_order(img_embs, assembly_id_dict, metadata, centers, route)
     vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
-    save_orders_to_file(orders, '../processed_data', vid)
+    save_orders_to_file(orders, '../processed_data')
     
