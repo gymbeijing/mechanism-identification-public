@@ -1,12 +1,11 @@
-'''
-This .py script is deprecated
-'''
 import networkx as nx
 import json
 import logging
 import argparse
+import glob
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
+
 
 def read_assembly_id(file_path):
     """
@@ -16,22 +15,6 @@ def read_assembly_id(file_path):
     with open(file_path, 'r') as f:
         assembly_id_list = f.read().splitlines()
     return assembly_id_list[3:]   # remove the first three "_"
-
-def obtain_and_save_embeddings(assembly_id_list, assembly_json_folder):
-    for assembly_id in assembly_id_list:
-        json_file_path = assembly_json_folder + "/" + assembly_id + "_assembly.json"
-        with open(json_file_path, 'r') as f:
-            assembly = json.load(f)
-            # print(assembly)
-
-    return 0;
-
-def construct_part_graphs(assembly_id_list):
-    return 0;
-
-
-def generate_and_save_orderings(part_graphs, part_emnbeddings):
-    return;
 
 
 if __name__ == '__main__':
@@ -43,8 +26,7 @@ if __name__ == '__main__':
 
     assembly_id_path = args.assembly_id_path   # should be "../raw_data/processed.txt"
     assembly_id_list = read_assembly_id(assembly_id_path)
-    logging.info(f'Found {len(assembly_id_list)} assembly ids')
+    logging.info(f'Found {len(assembly_id_list)} assembly ids in {args.assembly_id_path}')
+
     assembly_folder = args.assembly_folder   # should be "../raw_data/assembly"
-    part_embeddings = obtain_and_save_embeddings(assembly_id_list, assembly_folder)
-    part_graphs = construct_part_graphs(assembly_id_list)
-    generate_and_save_orderings(part_graphs, part_embeddings)
+	assembly_json_list = glob.glob

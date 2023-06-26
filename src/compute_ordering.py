@@ -199,8 +199,8 @@ def compute_segment_id(emb, segments, route):
 
 
 def save_orders_to_file(orders, dirname):
-    logging.info(f'Saving part orders to {dirname}/part_orders.json')
-    with open(dirname+'/'+f'part_orders.json', 'w', encoding='utf8') as fp:
+    logging.info(f'Saving part orders to {dirname}/part_orders_dim=5.json')
+    with open(dirname+'/'+f'part_orders_dim=5.json', 'w', encoding='utf8') as fp:
         json.dump(orders, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
     return
@@ -252,8 +252,8 @@ def save_cluster_info(labels, metadata, dirname):
         else:
             cluster_image_name_dict[label.item()].append(metadata[i])
 
-    logging.info(f'Saving cluster_info to {dirname}/cluster_info.json')
-    with open(f'{dirname}/cluster_info.json', 'w', encoding='utf8') as fp:
+    logging.info(f'Saving cluster_info to {dirname}/cluster_info_dim=512.json')
+    with open(f'{dirname}/cluster_info_dim=512.json', 'w', encoding='utf8') as fp:
         json.dump(cluster_image_name_dict, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
     return
@@ -302,16 +302,17 @@ if __name__ == '__main__':
         metadata = json.load(f)
     
     # Compute the closest img to the cluster
-    closest_img_embs_name = compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
-    logging.info(f'Printing the closest image embedding to each cluster...')
-    print(closest_img_embs_name)
+    #closest_img_embs_name = compute_closest_emb_to_clusters(centers, img_embs, cluster_labels, metadata)
+    #logging.info(f'Printing the closest image embedding to each cluster...')
+    #print(closest_img_embs_name)
 
-    save_cluster_info(cluster_labels, metadata, '../processed_data')
+    #save_cluster_info(cluster_labels, metadata, '../processed_data')
 
-    sys.exit()
+    #sys.exit()
 
     # Calculate the TSP route
     route = compute_route(centers)
+    logging.info('Printing the route...')
     print(route)
     
     # Compute the dict mapping assembly id to the list of indexes of the part belonging to the assembly
@@ -328,6 +329,6 @@ if __name__ == '__main__':
 
     # Assign order to the parts in each assembly
     orders = assign_order(img_embs, assembly_id_dict, metadata, centers, route)
-    vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
+    #vid = args.embedding_path.split('/')[-1].split('.')[0].split('_')[-1]
     save_orders_to_file(orders, '../processed_data')
     
