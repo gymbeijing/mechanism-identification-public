@@ -35,7 +35,7 @@ def load_emb(emb_filepaths):
 	return emb_dict
 
 
-def filter_emb(emb_dict, metadata_dict):
+def filter_emb(emb_dict, intersect, metadata_dict):
 	emb_filtered_dict = dict()
 	for vid, emb in emb_dict.items():
 		m_data = metadata_dict[vid]
@@ -43,9 +43,9 @@ def filter_emb(emb_dict, metadata_dict):
 		for idx, d in enumerate(m_data):
 			if d in intersect:
 				keep_indice.append(idx)
-		emb_dict[vid] = emb[keep_indice]
+		emb_dict[vid] = emb[keep_indice]   # warning: in-place operation, better be emb_filtered_dict[vid] = emb[keep_indice], and later return emb_filtered_dict, new_metadata
 		#print(f'{vid}: {emb_dict[vid].shape}')   # [141245, 512]
-		if vid == '00':
+		if vid == '00':   # only use 00 to find the metadata.It will be the same whichever {vid} folder to use
 			new_metadata = [metadata_dict[vid][idx] for idx in keep_indice]
 
 	return emb_dict, new_metadata
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 	emb_dict = load_emb(emb_filepaths)
 
 	# Filter out the part that doesn't have 24 views
-	emb_dict, new_metadata = filter_emb(emb_dict, metadata_dict)
+	emb_dict, new_metadata = filter_emb(emb_dict, intersect, metadata_dict)
 
 	# Pool embeddings according to the pooling strategy
 	pooled_emb = pool_embedding(emb_dict, args.pooling_strategy)   # [141245, 512]
