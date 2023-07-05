@@ -37,7 +37,7 @@ class AEDataset(Dataset):
 		self.all_md.append("pad")   # 141246
 
 		#n_neighbour = config.n_neighbour
-		n_neighbour = 10
+		n_neighbour = 9
 
 		# All the preprocessed part graphs
 		#all_part_graph_path = os.path.join(config.emb_dir, "part_graphs_dim=5.json")
@@ -55,7 +55,7 @@ class AEDataset(Dataset):
 		for idx, p_name in enumerate(self.all_md):
 			part_name_idx_map[p_name] = idx
 
-		logging.info(f'pad\'s corresponding index is {part_name_idx_map["pad"]}')
+		#logging.info(f'pad\'s corresponding index is {part_name_idx_map["pad"]}')
 
 		self.all_data = torch.ones(n_part_graph, n_neighbour+1)*part_name_idx_map["pad"]   # initialize to be all pad's index 
 
@@ -63,13 +63,9 @@ class AEDataset(Dataset):
 		r = 0
 		for a_id, a_graphs in self.all_part_graph.items():
 			for c_part, neigh_parts in a_graphs.items():
-				if r == 0:
-					print(c_part)
 				self.all_data[r][0] = part_name_idx_map[c_part]
 				c = 1
 				for neigh_part in neigh_parts:
-					if r == 0:
-						print(neigh_part)
 					if c <= n_neighbour:   # only keep the first n_neighbour neighbouring parts
 						self.all_data[r][c] = part_name_idx_map[neigh_part]
 					else:
@@ -81,11 +77,16 @@ class AEDataset(Dataset):
 		return self.all_data.shape[0]
 
 	def __getitem__(self, idx):
-		return self.all_data[idx]   # [512]
+		emb_list = []
+		indices = self.all_data[idx]
+		for ind in indices:
+			emb_list.append(self.all_emb[int(ind)])
+		item = torch.cat(emb_list, 0)   # [5120]
+		return item
 
 
 if __name__ == "__main__":
 	dataset = AEDataset()
 	print(dataset[0])
-	print(dataset[1])
+	print(dataset[0].shape)
 	print(len(dataset))
