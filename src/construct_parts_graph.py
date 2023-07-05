@@ -67,7 +67,7 @@ def order_parts(neighbours, assembly_parts_to_order_map):
 	return ordered_neighbours, parts_not_found
 
 
-def compute_part_graphs(graph_dict, all_parts_order):
+def compute_part_graphs(graph_dict, all_parts_order, existing_parts):
 	all_parts_not_found = []
 	
 	part_graph_dict = dict()
@@ -89,7 +89,8 @@ def compute_part_graphs(graph_dict, all_parts_order):
 				ordered_a_neighbours, parts_not_found = order_parts(a_neighbours, a_parts_to_order_map)
 				all_parts_not_found += parts_not_found
 				if len(ordered_a_neighbours) != 0:
-					part_graph_dict[a_id][f'0000_{a_id}_{a_node}_0000'] = ordered_a_neighbours
+					if f'0000_{a_id}_{a_node}_0000' in existing_parts:
+						part_graph_dict[a_id][f'0000_{a_id}_{a_node}_0000'] = ordered_a_neighbours
 
 		if len(part_graph_dict[a_id]) == 0:
 			part_graph_dict.pop(a_id)
@@ -108,10 +109,11 @@ def write_json(content, filepath):
 if __name__ == '__main__':
 	# Parse the arguments
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--assembly_id_path', type=str, help='Path to the file that stores all the processed/filtered assembly ids')
-	parser.add_argument('--assembly_folder', type=str, help='Path to the folder that stores all the assembly.json files')
-	parser.add_argument('--assembly_parts_order', type=str, help='Path to the file that stores the mapping from assembly id and computed orders of its parts')
-	parser.add_argument('--save_path', type=str, help='Path to the file that will save the part graphs')
+	parser.add_argument('--assembly_id_path', type=str, default='../processed_data/processed_assembly_ids.json',  help='Path to the file that stores all the processed/filtered assembly ids')
+	parser.add_argument('--assembly_folder', type=str, default='../raw_data/assembly', help='Path to the folder that stores all the assembly.json files')
+	parser.add_argument('--assembly_parts_order', type=str, default='../processed_data/part_orders_dim=5.json', help='Path to the file that stores the mapping from assembly id and computed orders of its parts')
+	parser.add_argument('--save_path', type=str, default='../processed_data/part_graphs_dim=5.json', help='Path to the file that will save the part graphs')
+	parser.add_argument('--filtered_parts', type=str, default='../processed_data/emb_idx_filtered.json', help='Path to the file that stores filtered part names')
 	args = parser.parse_args()
 
 	# Load in the filtered assembly ids from the view folders into a list
@@ -131,9 +133,11 @@ if __name__ == '__main__':
 	# Load in the part order map ({assembly_id: [part1, part2, ..., partn]}) for all assemblies
 	assembly_parts_order = read_json(args.assembly_parts_order)
 
+	filtered_parts = read_json(args.filtered_parts)
+
 	# Compute the part graphs generated from the whole graph for each assembly
 	logging.info(f'Computing part graphs')
-	part_graph_dict, all_parts_not_found = compute_part_graphs(assembly_graph_dict, assembly_parts_order)
+	part_graph_dict, all_parts_not_found = compute_part_graphs(assembly_graph_dict, assembly_parts_order, filtered_parts)
 
 	# Save the part graphs into file
 	logging.info(f'Saving part graphs into {args.save_path}')
