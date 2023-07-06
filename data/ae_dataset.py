@@ -57,7 +57,8 @@ class AEDataset(Dataset):
 
 		#logging.info(f'pad\'s corresponding index is {part_name_idx_map["pad"]}')
 
-		self.all_data = torch.ones(n_part_graph, n_neighbour+1)*part_name_idx_map["pad"]   # initialize to be all pad's index 
+		#self.all_data = torch.ones((n_part_graph, n_neighbour+1), dtype=torch.long)*part_name_idx_map["pad"]   # initialize to be all pad's index 
+		self.all_data = torch.full((n_part_graph, n_neighbour+1), fill_value=part_name_idx_map["pad"], dtype=torch.long)   # initialize to be all pad's index 
 
 		# Fill in the matrix
 		r = 0
@@ -79,9 +80,12 @@ class AEDataset(Dataset):
 	def __getitem__(self, idx):
 		emb_list = []
 		indices = self.all_data[idx]
-		for ind in indices:
-			emb_list.append(self.all_emb[int(ind)])
-		item = torch.cat(emb_list, 0)   # [5120]
+		#indices = torch.LongTensor(indices)
+		#for ind in indices:
+		#	emb_list.append(self.all_emb[int(ind)])
+		#item = torch.cat(emb_list, 0)   # [5120]
+		item = self.all_emb[indices].flatten()
+		
 		return item
 
 
