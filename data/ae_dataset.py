@@ -11,24 +11,23 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(m
 def get_dataloader(phase, config, shuffle=None):
 	is_shuffle = phase=='train' if shuffle is None else shuffle
 
-	dataset = AEDataset()
-	dataloader = DataLoader(dataset, batch_size=config.batch_size, shuffle=is_shuffle)
+	dt = AEDataset()
+	dataloader = DataLoader(dt, batch_size=config.batch_size, shuffle=is_shuffle)
 	return dataloader
-	
 
 
 class AEDataset(Dataset):
 	#def __init__(self, config):
 	def __init__(self):
 		super(AEDataset, self).__init__()
-	
+
 		# All the embeddings
 		#all_emb_path = os.path.join(config.emb_dir, "mean_pooled_emb.pt")
 		all_emb_path = os.path.join("../processed_data", "mean_pooled_emb.pt")
 		self.all_emb = torch.load(all_emb_path)   # [141245, 512]
 		pad = torch.zeros(1, 512)
 		self.all_emb = torch.cat((self.all_emb, pad), 0) # [141246, 512]
-		
+
 		# All the metadata
 		#all_md_path = os.path.join(config.emb_dir, "emb_idx_filtered.json")
 		all_md_path = os.path.join("../processed_data", "emb_idx_filtered.json")
@@ -44,12 +43,12 @@ class AEDataset(Dataset):
 		all_part_graph_path = os.path.join("../processed_data", "part_graphs_dim=5.json")
 		with open(all_part_graph_path, 'r') as fp:
 			self.all_part_graph = json.load(fp)
-		
+
 		# Number of part graphs in total, ~53000
 		n_part_graph = 0
 		for a_id, a_graphs in self.all_part_graph.items():
 			n_part_graph += len(a_graphs)
-		
+
 		# Map part name to its idx in the metadata/embeddings
 		part_name_idx_map = dict()
 		for idx, p_name in enumerate(self.all_md):
@@ -57,8 +56,8 @@ class AEDataset(Dataset):
 
 		#logging.info(f'pad\'s corresponding index is {part_name_idx_map["pad"]}')
 
-		#self.all_data = torch.ones((n_part_graph, n_neighbour+1), dtype=torch.long)*part_name_idx_map["pad"]   # initialize to be all pad's index 
-		self.all_data = torch.full((n_part_graph, n_neighbour+1), fill_value=part_name_idx_map["pad"], dtype=torch.long)   # initialize to be all pad's index 
+		#self.all_data = torch.ones((n_part_graph, n_neighbour+1), dtype=torch.long)*part_name_idx_map["pad"]   # initialize to be all pad's index
+		self.all_data = torch.full((n_part_graph, n_neighbour+1), fill_value=part_name_idx_map["pad"], dtype=torch.long)   # initialize to be all pad's index
 
 		# Fill in the matrix
 		r = 0
@@ -85,7 +84,7 @@ class AEDataset(Dataset):
 		#	emb_list.append(self.all_emb[int(ind)])
 		#item = torch.cat(emb_list, 0)   # [5120]
 		item = self.all_emb[indices].flatten()
-		
+
 		return item
 
 
