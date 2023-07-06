@@ -25,22 +25,6 @@ class AutoEncoder(pl.LightningModule):
 			nn.Linear(cfg.dim_emb//2, cfg.dim_emb),   # 2560 -> 5120
 			nn.LeakyReLU()
 		)
-		# self.encoder = nn.Sequential(
-		# 	nn.Linear(5120, 2560),  # 5120 -> 2560
-		# 	nn.LeakyReLU(),
-		# 	nn.Linear(2560, 1280),  # 2560 -> 1280
-		# 	nn.LeakyReLU(),
-		# 	nn.Linear(1280, 512),  # 1280 -> 512
-		# 	nn.LeakyReLU()
-		# )
-		# self.decoder = nn.Sequential(
-		# 	nn.Linear(512, 1280),  # 512 -> 1280
-		# 	nn.LeakyReLU(),
-		# 	nn.Linear(1280, 2560),  # 1280 -> 2560
-		# 	nn.LeakyReLU(),
-		# 	nn.Linear(2560, 5120),  # 2560 -> 5120
-		# 	nn.LeakyReLU()
-		# )
 
 	def forward(self, x):
 		z = self.encoder(x)

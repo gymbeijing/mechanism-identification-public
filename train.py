@@ -8,7 +8,7 @@ import pytorch_lightning as pl
 def main():
 	cfg = ConfigAE('train')
 	model = AutoEncoder(cfg)
-	trainer = pl.Trainer(accelerator="gpu", device=0)
+	trainer = pl.Trainer(accelerator="gpu", max_epochs=cfg.args.max_epochs)
 	train_loader = get_dataloader('train', cfg)
 	trainer.fit(model, train_loader)
 

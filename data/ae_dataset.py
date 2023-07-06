@@ -12,7 +12,7 @@ def get_dataloader(phase, config, shuffle=None):
 	is_shuffle = phase=='train' if shuffle is None else shuffle
 
 	dt = AEDataset()
-	dataloader = DataLoader(dt, batch_size=config.batch_size, shuffle=is_shuffle)
+	dataloader = DataLoader(dt, batch_size=config.args.batch_size, shuffle=is_shuffle)
 	return dataloader
 
 
@@ -23,14 +23,14 @@ class AEDataset(Dataset):
 
 		# All the embeddings
 		#all_emb_path = os.path.join(config.emb_dir, "mean_pooled_emb.pt")
-		all_emb_path = os.path.join("../processed_data", "mean_pooled_emb.pt")
+		all_emb_path = os.path.join("./processed_data", "mean_pooled_emb.pt")
 		self.all_emb = torch.load(all_emb_path)   # [141245, 512]
 		pad = torch.zeros(1, 512)
 		self.all_emb = torch.cat((self.all_emb, pad), 0) # [141246, 512]
 
 		# All the metadata
 		#all_md_path = os.path.join(config.emb_dir, "emb_idx_filtered.json")
-		all_md_path = os.path.join("../processed_data", "emb_idx_filtered.json")
+		all_md_path = os.path.join("./processed_data", "emb_idx_filtered.json")
 		with open(all_md_path, 'r') as fp:
 			self.all_md = json.load(fp)   # 141245
 		self.all_md.append("pad")   # 141246
@@ -40,7 +40,7 @@ class AEDataset(Dataset):
 
 		# All the preprocessed part graphs
 		#all_part_graph_path = os.path.join(config.emb_dir, "part_graphs_dim=5.json")
-		all_part_graph_path = os.path.join("../processed_data", "part_graphs_dim=5.json")
+		all_part_graph_path = os.path.join("./processed_data", "part_graphs_dim=5.json")
 		with open(all_part_graph_path, 'r') as fp:
 			self.all_part_graph = json.load(fp)
 
@@ -77,7 +77,7 @@ class AEDataset(Dataset):
 		return self.all_data.shape[0]
 
 	def __getitem__(self, idx):
-		emb_list = []
+		# emb_list = []
 		indices = self.all_data[idx]
 		#indices = torch.LongTensor(indices)
 		#for ind in indices:
