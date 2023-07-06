@@ -73,6 +73,8 @@ class AEDataset(Dataset):
 					c += 1
 				r += 1
 
+		self.all_data = self.all_data[:16]
+
 	def __len__(self):
 		return self.all_data.shape[0]
 
