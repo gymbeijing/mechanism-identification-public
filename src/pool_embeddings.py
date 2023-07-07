@@ -76,7 +76,7 @@ def save_emb_to_file(emb, metadata, args):
 if __name__ == '__main__':
 	# Parse the arguments
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--embs_folder', type=str, default='../emb', help='Path to the folder that stores all the embeddings')
+	parser.add_argument('--embs_folder', type=str, default='../processed_data', help='Path to the folder that stores all the embeddings')
 	parser.add_argument('--pooling_strategy', type=str, default='mean', help='Pooling strategy to be used')
 	args = parser.parse_args()
 

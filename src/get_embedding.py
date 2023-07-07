@@ -46,7 +46,7 @@ def get_emb(dataloader, model):
         #print(torch.cuda.memory_allocated())
         samples = {"image": batch_image, "text_input": list(batch_text_input)}
         features = model.extract_features(samples)
-        features_image = features.image_features   # [bs, 512], image_features is normalized image_embeds
+        features_image = features.image_embeds_proj   # [bs, 512], image_embeds_proj is normalized image_embeds
 
         total_img_id_list += list(batch_img_id)
         batch_emb_list.append(features_image.detach().cpu())   # .detach().cpu() is to free up gpu memory, otherwise will run into OOM issue
@@ -97,5 +97,5 @@ if __name__ == '__main__':
 
     image_ids, image_embs = get_emb(imageloader, model)
 
-    # vid = args.image_folder.split('/')[-1]
-    # save_emb_to_file(image_ids, image_embs, '../emb', vid)
+    vid = args.image_folder.split('/')[-1]
+    save_emb_to_file(image_ids, image_embs, '../processed_data', vid)
