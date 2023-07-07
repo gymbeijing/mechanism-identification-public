@@ -12,6 +12,7 @@ def get_dataloader(phase, config, shuffle=None):
 	is_shuffle = phase=='train' if shuffle is None else shuffle
 
 	dt = AEDataset()
+	is_shuffle = False
 	dataloader = DataLoader(dt, batch_size=config.args.batch_size, shuffle=is_shuffle)
 	return dataloader
 
@@ -73,7 +74,7 @@ class AEDataset(Dataset):
 					c += 1
 				r += 1
 
-		self.all_data = self.all_data[:16]
+		self.all_data = self.all_data
 
 	def __len__(self):
 		return self.all_data.shape[0]

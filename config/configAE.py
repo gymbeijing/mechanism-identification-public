@@ -18,7 +18,7 @@ class ConfigAE(object):
 	def parse():
 		parser = argparse.ArgumentParser()
 
-		parser.add_argument('--batch_size', type=int, default=16, help="batch size")
+		parser.add_argument('--batch_size', type=int, default=64, help="batch size")
 		parser.add_argument('--max_epochs', type=int, default=1000, help="total number of training epochs")
 		parser.add_argument('--lr', type=float, default=1e-3, help="initial learning rate")
 		parser.add_argument('--emb_dir', type=str, default="../processed_data", help="directory to the saved embeddings")
