@@ -23,7 +23,7 @@ def main():
     log_dir = Path(tb_logger.log_dir)
     ckpt_path = log_dir/"checkpoints"
     checkpoint_callback = ModelCheckpoint(dirpath=ckpt_path,
-                                          filename="best.ckpt",
+                                          filename="best",
                                           save_top_k=1,
                                           verbose=True,
                                           monitor="mean_val_loss")
