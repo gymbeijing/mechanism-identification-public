@@ -199,8 +199,8 @@ def compute_segment_id(emb, segments, route):
 
 
 def save_orders_to_file(orders, dirname):
-    logging.info(f'Saving part orders to {dirname}/part_orders_dim=5.json')
-    with open(dirname+'/'+f'part_orders_dim=5.json', 'w', encoding='utf8') as fp:
+    logging.info(f'Saving part orders to {dirname}/part_orders_dim={REDUCED_DIM}.json')
+    with open(dirname+'/'+f'part_orders_dim={REDUCED_DIM}.json', 'w', encoding='utf8') as fp:
         json.dump(orders, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
     return
