@@ -1,5 +1,5 @@
 import torch.nn as nn
-import pytorch_lightning as pl
+import pytorch_lightning as pl   # version: 2.0.4
 # import lightning as L
 import torch.optim
 import torch.nn.functional as F
@@ -23,6 +23,8 @@ class AutoEncoder(pl.LightningModule):
 			nn.LeakyReLU(),
 			nn.Linear(cfg.dim_emb//2, cfg.dim_emb),   # 2560 -> 5120
 		)
+
+		self.validation_step_outputs = []
 
 	def forward(self, x):
 		z = self.encoder(x)
@@ -50,6 +52,16 @@ class AutoEncoder(pl.LightningModule):
 		x_hat = self.forward(x)
 		loss = F.mse_loss(x_hat, x)
 		self.log('val_loss', loss)
+		self.validation_step_outputs.append(loss)
+
+		return loss
+
+	def on_validation_epoch_end(self):
+		val_losses = torch.stack(self.validation_step_outputs)
+		mean_val_loss = val_losses.mean()
+		self.validation_step_outputs.clear()
+		self.log('mean_val_loss', mean_val_loss)
+		return {"mean_val_loss": mean_val_loss}
 
 
 if __name__ == '__main__':

@@ -11,16 +11,22 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(m
 def get_dataloader(phase, config, shuffle=None):
 	is_shuffle = phase=='train' if shuffle is None else shuffle
 
-	dt = AEDataset()
-	is_shuffle = False
+	dt = AEDataset(phase)
+	# is_shuffle = False
 	dataloader = DataLoader(dt, batch_size=config.args.batch_size, shuffle=is_shuffle)
 	return dataloader
 
 
 class AEDataset(Dataset):
 	#def __init__(self, config):
-	def __init__(self):
+	def __init__(self, phase="train"):
 		super(AEDataset, self).__init__()
+
+		# Set the phase
+		self.phase = phase
+		train_test_path = os.path.join("./raw_data", "train_test.json")
+		with open(train_test_path, 'r') as fp:
+			train_test = json.load(fp)
 
 		# All the embeddings
 		#all_emb_path = os.path.join(config.emb_dir, "mean_pooled_emb.pt")
@@ -48,7 +54,8 @@ class AEDataset(Dataset):
 		# Number of part graphs in total, ~53000
 		n_part_graph = 0
 		for a_id, a_graphs in self.all_part_graph.items():
-			n_part_graph += len(a_graphs)
+			if a_id in train_test[phase]:
+				n_part_graph += len(a_graphs)
 
 		# Map part name to its idx in the metadata/embeddings
 		part_name_idx_map = dict()
@@ -63,16 +70,17 @@ class AEDataset(Dataset):
 		# Fill in the matrix
 		r = 0
 		for a_id, a_graphs in self.all_part_graph.items():
-			for c_part, neigh_parts in a_graphs.items():
-				self.all_data[r][0] = part_name_idx_map[c_part]
-				c = 1
-				for neigh_part in neigh_parts:
-					if c <= n_neighbour:   # only keep the first n_neighbour neighbouring parts
-						self.all_data[r][c] = part_name_idx_map[neigh_part]
-					else:
-						break
-					c += 1
-				r += 1
+			if a_id in train_test[phase]:
+				for c_part, neigh_parts in a_graphs.items():
+					self.all_data[r][0] = part_name_idx_map[c_part]
+					c = 1
+					for neigh_part in neigh_parts:
+						if c <= n_neighbour:   # only keep the first n_neighbour neighbouring parts
+							self.all_data[r][c] = part_name_idx_map[neigh_part]
+						else:
+							break
+						c += 1
+					r += 1
 
 		self.all_data = self.all_data
 
@@ -92,7 +100,7 @@ class AEDataset(Dataset):
 
 
 if __name__ == "__main__":
-	dataset = AEDataset()
+	dataset = AEDataset("test")
 	print(dataset[0])
 	print(dataset[0].shape)
 	print(len(dataset))
