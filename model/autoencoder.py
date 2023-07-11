@@ -32,6 +32,11 @@ class AutoEncoder(pl.LightningModule):
 
 		return out
 
+	def encode(self, x):
+		z = self.encoder(x)
+
+		return z
+
 	def configure_optimizers(self):
 		optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
