@@ -33,12 +33,13 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(h_dim, h_dim),
             nn.LeakyReLU(),
-            nn.Linear(h_dim, 1)
+            nn.Linear(h_dim, 1),
+            nn.Sigmoid()   # Another option to map it to [0, 1] is .argmax()
         )
 
     def forward(self, inputs):
         output = self.decoder(inputs)
-        return output.view(-1)
+        return output
 
 
 class GAN(pl.LightningModule):
@@ -69,7 +70,7 @@ class GAN(pl.LightningModule):
         real_data = train_batch
         real_data = real_data.view(real_data.size(0), -1)
 
-        optimizer_g, optimizer_d = self.configure_optimizers()
+        optimizer_g, optimizer_d = self.optimizers()
 
         # Sample noise
         bs = real_data.shape[0]
@@ -111,5 +112,5 @@ class GAN(pl.LightningModule):
         optimizer_d.zero_grad()
         self.untoggle_optimizer(optimizer_d)
 
-        return g_loss, d_loss
+        return
 

@@ -1,7 +1,6 @@
 from config.configAE import ConfigAE
 from data.ae_dataset import get_dataloader
 from model.autoencoder import AutoEncoder
-from tqdm import tqdm
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import time
@@ -32,6 +31,9 @@ def main():
                          logger=tb_logger,
                          callbacks=[checkpoint_callback])
     train_loader = get_dataloader('train', cfg)
+    # Should add cfg = ConfigAE('test')
+    # And no need to pass 'test' which is already in cfg.is_train
+    # But the logic is not affected, since only cfg.batch_size from cfg is used in constructing the test_loader so far
     test_loader = get_dataloader('test', cfg)
     trainer.fit(model, train_loader, test_loader)
 
