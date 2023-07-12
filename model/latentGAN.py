@@ -111,9 +111,5 @@ class GAN(pl.LightningModule):
         optimizer_d.zero_grad()
         self.untoggle_optimizer(optimizer_d)
 
-
-
-
-
-        return loss
+        return g_loss, d_loss
 
