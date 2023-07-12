@@ -47,7 +47,7 @@ class GAN(pl.LightningModule):
         self.G = Generator(cfg.n_dim, cfg.h_dim, cfg.z_dim)
         self.D = Discriminator(cfg.h_dim, cfg.z_dim)
         self.validation_step_outputs = []
-        self.lr = cfg.lr
+        self.lr = cfg.args.lr
         self.n_dim = cfg.n_dim
         self.h_dim = cfg.h_dim
         self.z_dim = cfg.z_dim
