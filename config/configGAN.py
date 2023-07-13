@@ -21,7 +21,7 @@ class ConfigGAN(object):
 
         parser.add_argument('--batch_size', type=int, default=64, help="batch size")
         parser.add_argument('--max_epochs', type=int, default=100, help="total number of training epochs")
-        parser.add_argument('--lr', type=float, default=1e-3, help="initial learning rate")
+        parser.add_argument('--lr', type=float, default=2e-4, help="initial learning rate")
         parser.add_argument('--z_file', type=str, default="./model_outputs/z_train.pt",
                             help="directory to the saved latent variables")
 

@@ -56,6 +56,8 @@ class GAN(pl.LightningModule):
         self.save_hyperparameters()
         # Important: This property activates manual optimization.
         self.automatic_optimization = False
+        self.scores_real_data = []
+        self.scores_fake_data = []
 
     def forward(self, z):
         return self.generator(z)
@@ -67,6 +69,8 @@ class GAN(pl.LightningModule):
         return optimizerG, optimizerD
 
     def training_step(self, train_batch, batch_idx):
+        tensorboard = self.logger.experiment
+
         real_data = train_batch
         real_data = real_data.view(real_data.size(0), -1)
 
@@ -85,9 +89,11 @@ class GAN(pl.LightningModule):
         valid = torch.ones(bs, 1)
         valid = valid.type_as(real_data)
 
+        self.scores_real_data.append(self.D(real_data))
+
         # Train G to generate close-to-real samples
         g_loss = F.binary_cross_entropy(self.D(fake_data), valid)
-        self.log("g_loss", g_loss, on_epoch=True)
+        self.log("g_loss", g_loss, on_epoch=True, prog_bar=True)
         self.manual_backward(g_loss)
         optimizer_g.step()
         optimizer_g.zero_grad()
@@ -104,13 +110,27 @@ class GAN(pl.LightningModule):
         fake = torch.zeros(bs, 1)
         fake = fake.type_as(real_data)
 
+        self.scores_fake_data.append(self.D(fake_data))
+
         fake_loss = F.binary_cross_entropy(self.D(fake_data.detach()), fake)
         d_loss = (real_loss + fake_loss) / 2
-        self.log("d_loss", d_loss, on_epoch=True)
+        self.log("d_loss", d_loss, on_epoch=True, prog_bar=True)
         self.manual_backward(d_loss)
         optimizer_d.step()
         optimizer_d.zero_grad()
         self.untoggle_optimizer(optimizer_d)
 
         return
+
+    def on_train_epoch_end(self):
+        self.logger.experiment.add_histogram("Scores for the real data", torch.cat(self.scores_real_data),
+                                             self.current_epoch)
+        self.scores_real_data.clear()
+
+        self.logger.experiment.add_histogram("Scores for the fake data", torch.cat(self.scores_fake_data),
+                                             self.current_epoch)
+        self.scores_fake_data.clear()
+
+        return
+
 
