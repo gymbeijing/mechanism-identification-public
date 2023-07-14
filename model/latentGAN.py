@@ -15,7 +15,7 @@ class Generator(nn.Module):
             nn.Linear(h_dim, h_dim),
             nn.LeakyReLU(),
             nn.Linear(h_dim, z_dim),
-            nn.Tanh(),
+            # nn.Tanh(),   # commenting out results in slightly worse performance in terms of the D scores of fake_data
         )
 
     def forward(self, noise):
@@ -58,6 +58,8 @@ class GAN(pl.LightningModule):
         self.automatic_optimization = False
         self.scores_real_data = []
         self.scores_fake_data = []
+        self.real_z = []
+        self.fake_z = []
 
     def forward(self, z):
         return self.generator(z)
@@ -69,7 +71,6 @@ class GAN(pl.LightningModule):
         return optimizerG, optimizerD
 
     def training_step(self, train_batch, batch_idx):
-        tensorboard = self.logger.experiment
 
         real_data = train_batch
         real_data = real_data.view(real_data.size(0), -1)
@@ -90,6 +91,7 @@ class GAN(pl.LightningModule):
         valid = valid.type_as(real_data)
 
         self.scores_real_data.append(self.D(real_data))
+        self.real_z.append(real_data)
 
         # Train G to generate close-to-real samples
         g_loss = F.binary_cross_entropy(self.D(fake_data), valid)
@@ -111,6 +113,7 @@ class GAN(pl.LightningModule):
         fake = fake.type_as(real_data)
 
         self.scores_fake_data.append(self.D(fake_data))
+        self.fake_z.append(fake_data)
 
         fake_loss = F.binary_cross_entropy(self.D(fake_data.detach()), fake)
         d_loss = (real_loss + fake_loss) / 2
@@ -126,10 +129,16 @@ class GAN(pl.LightningModule):
         self.logger.experiment.add_histogram("Scores for the real data", torch.cat(self.scores_real_data),
                                              self.current_epoch)
         self.scores_real_data.clear()
+        self.logger.experiment.add_histogram("Elements of the real latent variable(z)", torch.cat(self.real_z),
+                                             self.current_epoch)
+        self.real_z.clear()
 
         self.logger.experiment.add_histogram("Scores for the fake data", torch.cat(self.scores_fake_data),
                                              self.current_epoch)
         self.scores_fake_data.clear()
+        self.logger.experiment.add_histogram("Elements of the generated latent variable(z_hat)", torch.cat(self.fake_z),
+                                             self.current_epoch)
+        self.fake_z.clear()
 
         return
 
