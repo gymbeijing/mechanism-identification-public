@@ -15,13 +15,25 @@ if __name__ == '__main__':
     model.eval()
     train_loader = get_dataloader('train', cfg)
 
-    batch_z = []
-    for batch_idx, batch in enumerate(train_loader):
-        z = model.encode(batch.to("cuda"))
-        batch_z.append(z)
+    # Save all z in the training phase
+    # batch_z = []
+    # for batch_idx, batch in enumerate(train_loader):
+    #     z = model.encode(batch.to("cuda"))
+    #     batch_z.append(z)
+    #
+    # all_z = torch.cat(batch_z, dim=0)
+    # # print(all_z.shape)
+    # path = "model_outputs/z_train.pt"
+    # save_tensor(all_z, path)
 
-    all_z = torch.cat(batch_z, dim=0)
+    # Save all reconstructed inputs in the training phase
+    batch_out = []
+    for batch_idx, batch in enumerate(train_loader):
+        out = model.forward(batch.to("cuda"))
+        batch_out.append(out)
+
+    all_out = torch.cat(batch_out, dim=0)
     # print(all_z.shape)
-    path = "model_outputs/z_train.pt"
-    save_tensor(all_z, path)
+    path = "model_outputs/out_train.pt"
+    save_tensor(all_out, path)
 

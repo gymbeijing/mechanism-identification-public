@@ -46,7 +46,7 @@ class AutoEncoder(pl.LightningModule):
 		x = train_batch
 		x = x.view(x.size(0), -1)
 		x_hat = self.forward(x)
-		loss = F.mse_loss(x_hat, x)
+		loss = F.mse_loss(x_hat, x)   # default: 'mean'
 		self.log('train_loss', loss, on_epoch=True)
 
 		return loss
