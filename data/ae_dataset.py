@@ -3,6 +3,7 @@ import torch
 import json
 import os
 import logging
+from scipy.ndimage import shift
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
@@ -33,14 +34,14 @@ class AEDataset(Dataset):
 		all_emb_path = os.path.join("./processed_data", "mean_pooled_emb.pt")
 		self.all_emb = torch.load(all_emb_path)   # [141245, 512]
 		pad = torch.zeros(1, 512)
-		self.all_emb = torch.cat((self.all_emb, pad), 0) # [141246, 512]
+		self.all_emb = torch.cat((self.all_emb, pad), 0)   # [141246, 512]
 
 		# All the metadata
 		#all_md_path = os.path.join(config.emb_dir, "emb_idx_filtered.json")
 		all_md_path = os.path.join("./processed_data", "emb_idx_filtered.json")
 		with open(all_md_path, 'r') as fp:
-			self.all_md = json.load(fp)   # 141245
-		self.all_md.append("pad")   # 141246
+			self.all_md = json.load(fp)   # .shape[0]=141245
+		self.all_md.append("pad")   # .shape[0]=141246
 
 		#n_neighbour = config.n_neighbour
 		n_neighbour = 9
@@ -51,7 +52,7 @@ class AEDataset(Dataset):
 		with open(all_part_graph_path, 'r') as fp:
 			self.all_part_graph = json.load(fp)
 
-		# Number of part graphs in total, ~53000
+		# Number of part graphs in total, train: 42,919, test: 10,377
 		n_part_graph = 0
 		for a_id, a_graphs in self.all_part_graph.items():
 			if a_id in train_test[phase]:
@@ -82,7 +83,17 @@ class AEDataset(Dataset):
 						c += 1
 					r += 1
 
-		self.all_data = self.all_data
+		self.all_data = self.all_data   # ?
+
+		'''
+		Add mask
+		'''
+		pad_idx = self.all_emb.shape[0] - 1
+		self.mask = (self.all_data < pad_idx).long()   # [n_part_graphs, 10]
+		self.mask = self.mask.roll(1, 1)   # shift by 1 along axis 1
+		# [n_part_graphs, 10], namely [42,919, 10] for the training data,
+		# and [10,377, 10] for the testing data, element being either 0 or 1
+		self.mask[:, 0] = 1   # set the first [pad]'s mask to 1, if there is any [pad]
 
 	def __len__(self):
 		return self.all_data.shape[0]
@@ -95,12 +106,16 @@ class AEDataset(Dataset):
 		#	emb_list.append(self.all_emb[int(ind)])
 		#item = torch.cat(emb_list, 0)   # [5120]
 		item = self.all_emb[indices].flatten()
+		mask = self.mask[idx].repeat_interleave(512).flatten()   # [10] -> [5120]
 
-		return item
+		return item, mask
 
 
 if __name__ == "__main__":
 	dataset = AEDataset("test")
-	print(dataset[0])
-	print(dataset[0].shape)
+	item, mask = dataset[0]
+	print(item[-522:-502])
+	print(item.shape)
+	print(mask)
+	print(mask.shape)
 	print(len(dataset))

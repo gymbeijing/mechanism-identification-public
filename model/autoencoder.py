@@ -43,19 +43,19 @@ class AutoEncoder(pl.LightningModule):
 		return optimizer
 
 	def training_step(self, train_batch, batch_idx):
-		x = train_batch
+		x, mask = train_batch
 		x = x.view(x.size(0), -1)
 		x_hat = self.forward(x)
-		loss = F.mse_loss(x_hat, x)   # default: 'mean'
+		loss = F.mse_loss(x_hat * mask, x * mask)   # default: 'mean'
 		self.log('train_loss', loss, on_epoch=True)
 
 		return loss
 
 	def validation_step(self, val_batch, batch_idx):
-		x = val_batch
+		x, mask = val_batch
 		x = x.view(x.size(0), -1)
 		x_hat = self.forward(x)
-		loss = F.mse_loss(x_hat, x)
+		loss = F.mse_loss(x_hat * mask, x * mask)
 		self.log('val_loss', loss)
 		self.validation_step_outputs.append(loss)
 
