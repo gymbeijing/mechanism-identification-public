@@ -24,6 +24,8 @@ class ConfigGAN(object):
         parser.add_argument('--lr', type=float, default=2e-4, help="initial learning rate")
         parser.add_argument('--z_file', type=str, default="./model_outputs/z_train_0717_170857.pt",
                             help="directory to the saved latent variables")
+        parser.add_argument('--c_emb_file', type=str, default="./processed_data/center_emb.pt",
+                            help="directory to the saved latent variables")
 
         args = parser.parse_args()
         return parser, args

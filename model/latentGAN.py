@@ -73,7 +73,7 @@ class GAN(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
 
-        real_data = train_batch
+        real_data, rand_c_emb = train_batch
         real_data = real_data.view(real_data.size(0), -1)
 
         optimizer_g, optimizer_d = self.optimizers()
@@ -86,7 +86,7 @@ class GAN(pl.LightningModule):
         '''
         Append the central part's emb to the front
         '''
-        noise = torch.cat((real_data, noise), 0)
+        noise = torch.cat((rand_c_emb, noise), 1)   # [bs, n_dim+z_dim]
 
         # Generate samples
         self.toggle_optimizer(optimizer_g)

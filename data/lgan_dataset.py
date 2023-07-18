@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset, DataLoader
 import torch
+import random
 
 
 def get_dataloader(config, shuffle=None):
@@ -18,10 +19,12 @@ class LGANDataset(Dataset):
 
         self.z = torch.load(self.cfg.args.z_file)
 
-        # self.c_emb =
+        self.c_emb = torch.load(self.cfg.args.c_emb_file)   # [42919, 512]
+        self.num_c = self.c_emb.shape[0]
 
     def __getitem__(self, idx):
-        return self.z[idx]
+        c_idx = random.randint(0, self.num_c-1)
+        return self.z[idx], self.c_emb[c_idx]
 
     def __len__(self):
         return self.z.shape[0]
