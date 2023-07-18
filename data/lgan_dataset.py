@@ -18,6 +18,8 @@ class LGANDataset(Dataset):
 
         self.z = torch.load(self.cfg.args.z_file)
 
+        # self.c_emb =
+
     def __getitem__(self, idx):
         return self.z[idx]
 

@@ -8,7 +8,8 @@ class Generator(nn.Module):
     def __init__(self, n_dim, h_dim, z_dim):
         super().__init__()
         self.generator = nn.Sequential(
-            nn.Linear(n_dim, h_dim),
+            # nn.Linear(n_dim, h_dim),   # w/o central part's emb
+            nn.Linear(n_dim + z_dim, h_dim),   # w/ central part's emb
             nn.LeakyReLU(),
             nn.Linear(h_dim, h_dim),
             nn.LeakyReLU(),
@@ -81,6 +82,11 @@ class GAN(pl.LightningModule):
         bs = real_data.shape[0]
         noise = torch.randn(bs, self.n_dim)
         noise = noise.type_as(real_data)
+
+        '''
+        Append the central part's emb to the front
+        '''
+        noise = torch.cat((real_data, noise), 0)
 
         # Generate samples
         self.toggle_optimizer(optimizer_g)
