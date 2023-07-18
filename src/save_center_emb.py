@@ -10,7 +10,7 @@ def save_tensor(t, dest):
 if __name__ == '__main__':
 
     # Set the phase
-    phase = 'train'
+    phase = 'test'
     train_test_path = os.path.join("../raw_data", "train_test.json")
     with open(train_test_path, 'r') as fp:
         train_test = json.load(fp)
@@ -24,8 +24,6 @@ if __name__ == '__main__':
     with open(all_md_path, 'r') as fp:
         all_md = json.load(fp)   # .shape[0]=141245
     all_md.append("pad")   # .shape[0]=141246
-
-    n_neighbour = 9
 
     # All the preprocessed part graphs
     all_part_graph_path = os.path.join("../processed_data", "part_graphs_dim=5.json")
@@ -44,9 +42,9 @@ if __name__ == '__main__':
                 c_idx = part_name_idx_map[c_part]
                 c_emb_list.append(all_emb[c_idx])   # c_part is unique
 
-    c_emb = torch.stack(c_emb_list)   # [42919, 512]
+    c_emb = torch.stack(c_emb_list)   # train: [42919, 512], test: [10377, 512]
     print(c_emb.shape)
-    path = "../processed_data/center_emb.pt"
+    path = "../processed_data/center_emb_test.pt"
     save_tensor(c_emb, path)
 
 

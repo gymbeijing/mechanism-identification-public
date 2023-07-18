@@ -9,11 +9,12 @@ def save_tensor(t, dest):
 
 
 if __name__ == '__main__':
+    phase = 'test'
     ckpt_file = 'lightning_logs/0717/170857/checkpoints/best.ckpt'
-    cfg = ConfigAE('train')
+    cfg = ConfigAE(phase)
     model = AutoEncoder.load_from_checkpoint(ckpt_file, cfg=cfg)
     model.eval()
-    train_loader = get_dataloader('train', cfg)
+    train_loader = get_dataloader(phase, cfg)
 
     # Save all z in the training phase
     batch_z = []
@@ -23,7 +24,8 @@ if __name__ == '__main__':
 
     all_z = torch.cat(batch_z, dim=0)
     # print(all_z.shape)
-    path = "model_outputs/z_train_0717_170857.pt"
+    path = f"model_outputs/z_{phase}_0717_170857.pt"
+    print(all_z.shape)   # train: [42919, 512], test: [10377, 512]
     save_tensor(all_z, path)
 
     # Save all reconstructed inputs in the training phase

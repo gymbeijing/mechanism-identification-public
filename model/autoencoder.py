@@ -29,17 +29,18 @@ class AutoEncoder(pl.LightningModule):
 	def forward(self, x):
 		z = self.encoder(x)
 		out = self.decoder(z)
-
 		return out
 
 	def encode(self, x):
 		z = self.encoder(x)
-
 		return z
+
+	def decode(self, z):
+		out = self.decoder(z)
+		return out
 
 	def configure_optimizers(self):
 		optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-
 		return optimizer
 
 	def training_step(self, train_batch, batch_idx):
@@ -48,7 +49,6 @@ class AutoEncoder(pl.LightningModule):
 		x_hat = self.forward(x)
 		loss = F.mse_loss(x_hat * mask, x * mask)   # default: 'mean'
 		self.log('train_loss', loss, on_epoch=True)
-
 		return loss
 
 	def validation_step(self, val_batch, batch_idx):
@@ -58,7 +58,6 @@ class AutoEncoder(pl.LightningModule):
 		loss = F.mse_loss(x_hat * mask, x * mask)
 		self.log('val_loss', loss)
 		self.validation_step_outputs.append(loss)
-
 		return loss
 
 	def on_validation_epoch_end(self):

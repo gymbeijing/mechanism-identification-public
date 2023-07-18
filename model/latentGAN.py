@@ -62,8 +62,8 @@ class GAN(pl.LightningModule):
         self.real_z = []
         self.fake_z = []
 
-    def forward(self, z):
-        return self.generator(z)
+    def forward(self, noise):
+        return self.G(noise)
 
     def configure_optimizers(self):
         optimizerG = torch.optim.Adam(self.G.parameters(), lr=self.lr)
