@@ -1,6 +1,7 @@
 from config.configGAN import ConfigGAN
 from data.lgan_dataset import get_dataloader
 from model.latentGAN import GAN
+from model.latentWGAN import WGAN
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import time
@@ -10,7 +11,7 @@ from pathlib import Path
 
 def main():
     cfg = ConfigGAN('train')
-    model = GAN(cfg)
+    model = WGAN(cfg)
 
     # Configure the tensorboard logger
     month_day = time.strftime('%m%d')
