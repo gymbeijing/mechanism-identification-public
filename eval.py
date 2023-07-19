@@ -6,10 +6,20 @@ from model.autoencoder import AutoEncoder
 from config.configAE import ConfigAE
 from data.ae_dataset import get_dataloader_from_tensor as get_dataloader_for_ae_decoder
 from data.ae_dataset import get_dataloader as get_dataloader_for_ae
+from torch import nn
+from torch import linalg as LA
 
 
 def compute_cosine_similarity(pred, true):
-    return None
+    assert len(pred) == len(true), "pred and true sequences are not having the same lengths"
+    total = len(pred)
+    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+    scores = []
+    for idx in range(total):
+        score = cos(pred[idx], true[idx])
+        scores.append(score)
+
+    return scores
 
 
 if __name__ == '__main__':
@@ -27,7 +37,7 @@ if __name__ == '__main__':
 
     # Generate z_hat from central part + noise
     batch_z_hat = []
-    batch_z = []
+    batch_z = []   # no use?
     for batch_idx, batch in enumerate(test_loader_for_gan):
         real_z, c_emb = batch
         real_z = real_z.view(real_z.size(0), -1)
@@ -49,17 +59,36 @@ if __name__ == '__main__':
 
     # Input generated z_hat to the trained Decoder in AE
     test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
-    test_loader_for_ae = get_dataloader_for_ae('test', ae_cfg)
+    test_loader_for_ae = get_dataloader_for_ae('test', ae_cfg)   # input
 
+    # Store the predicted sequence for each data point
+    rec_seq = []
+    rec_norm = []
     for batch_idx, batch in enumerate(test_loader_for_ae_decoder):
         out = ae.decode(batch[0].cuda())   # batch is a len=1 list (inp, tgt?), out has the shape of [bs, 5120]
-        print(out.shape)
+        # print(out.shape)
         bs = out.shape[0]
         for i in range(bs):
             predicted_seq = out[i]   # [5120,]
             # predicted_parts_emb = torch.split(predicted_seq, 512, 0)   # tuple of 10x [512,]
-            predicted_parts_emb = predicted_seq.reshape((-1, 512))
+            predicted_seq = predicted_seq.reshape((-1, 512))   # [10, 512]
+            rec_seq.append(predicted_seq.cpu())   # 10377
+            rec_norm.append(LA.norm(predicted_seq, dim=1))   # [10,]?
 
+    # Store the original sequence for each data point
+    ori_seq = []
+    for batch_idx, batch in enumerate(test_loader_for_ae):
+        inp, _ = batch
+        bs = inp.shape[0]
+        for i in range(bs):
+            input_seq = inp[i]
+            input_seq = input_seq.reshape((-1, 512))   # [10, 512]
+            ori_seq.append(input_seq)
 
-    # compute_cosine_similarity()
+    # find the pad for ori, compute the 'mask'
+    eps = 0.1
+
+    # normalization in need for rec_seq?
+    sim_scores = compute_cosine_similarity(rec_seq, ori_seq)
+    print(sim_scores[0])   # Mode collapse encountered
 
