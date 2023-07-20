@@ -26,7 +26,7 @@ def main():
                                           filename="best_gan",
                                           save_top_k=1,
                                           verbose=True,
-                                          monitor="critic_loss")   # g_loss for GAN, critic_loss for WGAN
+                                          monitor="D_cost")   # Min. g_loss for GAN, D_cost for WGAN
     trainer = pl.Trainer(accelerator="gpu",
                          max_epochs=cfg.args.max_epochs,
                          logger=tb_logger,

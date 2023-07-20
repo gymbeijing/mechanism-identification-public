@@ -78,13 +78,14 @@ class WGAN(pl.LightningModule):
 
         real_data, rand_c_emb = train_batch
         real_data = real_data.view(real_data.size(0), -1)
+        real_data.requires_grad_(True)   # necessary?
         bs = real_data.shape[0]
         self.real_z.append(real_data)
 
         optimizer_g, optimizer_d = self.optimizers()
 
         # Train D
-        self.toggle_optimizer(optimizer_d)
+        self.toggle_optimizer(optimizer_d)   # parameters in all the other optimizers are set to requires_grad=False
         self.D.zero_grad()
 
         # Train with real
@@ -112,29 +113,33 @@ class WGAN(pl.LightningModule):
         critic_loss = D_real - D_fake   # we want to max. critic_loss, so that D_fake and D_real can be largely separated
         D_cost = D_fake - D_real   # we want to min. D_cost
 
-        self.log("critic_loss", -critic_loss, on_epoch=True, prog_bar=True)   # Max. critic loss
+        self.log("D_loss", D_cost, on_epoch=True, prog_bar=True)   # Min. D_cost
+        self.log("critic_loss", critic_loss, on_epoch=True, prog_bar=True)   # Max. critic loss
         optimizer_d.step()
         optimizer_d.zero_grad()
         self.untoggle_optimizer(optimizer_d)
 
         # Train G
-        self.toggle_optimizer(optimizer_g)
+        self.toggle_optimizer(optimizer_g)   # parameters in all the other optimizers are set to requires_grad=False
         self.G.zero_grad()
         # Re-generate the noise
         noise = torch.randn(bs, self.n_dim)
         noise = noise.type_as(real_data)
         noise = torch.cat((rand_c_emb, noise), 1)  # [bs, n_dim+z_dim], append the central part's emb to the front
+        noise.requires_grad_(True)  # necessary?
         # Re-generate fake data
         fake_data = self.G(noise)
 
         # Train with fake (generated samples)
         G = self.D(fake_data)
         G = G.mean(dim=0, keepdim=True)
-        self.manual_backward(G * mone)   # compute the gradients in the graph? yes. Max. g_loss
+        self.manual_backward(G * mone)   # we want to max. G
 
         # Update parameters in G
         g_loss = G
-        self.log("g_loss", -g_loss, on_epoch=True, prog_bar=True)
+        G_cost = -G
+        self.log("G_loss", G_cost, on_epoch=True, prog_bar=True)   # Min. G_cost
+        # self.log("g_loss", g_loss, on_epoch=True, prog_bar=True)
         optimizer_g.step()
         optimizer_g.zero_grad()
         self.untoggle_optimizer(optimizer_g)
