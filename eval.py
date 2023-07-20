@@ -1,5 +1,6 @@
 from config.configGAN import ConfigGAN
 from model.latentGAN import GAN
+from model.latentWGAN import WGAN
 from data.lgan_dataset import get_dataloader as get_dataloader_for_gan
 import torch
 from model.autoencoder import AutoEncoder
@@ -24,9 +25,10 @@ def compute_cosine_similarity(pred, true):
 
 if __name__ == '__main__':
     # Load in checkpoints
-    gan_ckpt_file = 'lightning_logs/0718/105055/checkpoints/best_gan.ckpt'
+    # gan_ckpt_file = 'lightning_logs/0718/105055/checkpoints/best_gan.ckpt'
+    gan_ckpt_file = 'lightning_logs/0720/100007/checkpoints/best_gan.ckpt'
     gan_cfg = ConfigGAN('test')
-    gan = GAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
+    gan = WGAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
     gan.eval()
     test_loader_for_gan = get_dataloader_for_gan(gan_cfg)
 

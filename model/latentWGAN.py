@@ -91,7 +91,7 @@ class WGAN(pl.LightningModule):
         D_real = self.D(real_data)
         D_real = D_real.mean(dim=0, keepdim=True)
         self.scores_real_data.append(D_real)
-        self.manual_backward(D_real * one)   # one or mone? think is one, b/c D(x), compute the gradients in the graph?
+        self.manual_backward(D_real * mone)   # we want to max. D_real, which is equivalent to min. -D_real
 
         # Generate samples
         # Sample noise
@@ -106,11 +106,13 @@ class WGAN(pl.LightningModule):
         D_fake = self.D(fake_data)
         D_fake = D_fake.mean(dim=0, keepdim=True)
         self.scores_fake_data.append(D_fake)
-        self.manual_backward(D_fake * mone)   # compute the gradients in the graph?
+        self.manual_backward(D_fake * one)   # we want to max. -D_fake, which is equivalent to min. D_fake
 
         # Update parameters in D
-        critic_loss = D_real - D_fake
-        self.log("critic_loss", critic_loss, on_epoch=True, prog_bar=True)
+        critic_loss = D_real - D_fake   # we want to max. critic_loss, so that D_fake and D_real can be largely separated
+        D_cost = D_fake - D_real   # we want to min. D_cost
+
+        self.log("critic_loss", -critic_loss, on_epoch=True, prog_bar=True)   # Max. critic loss
         optimizer_d.step()
         optimizer_d.zero_grad()
         self.untoggle_optimizer(optimizer_d)
@@ -128,11 +130,11 @@ class WGAN(pl.LightningModule):
         # Train with fake (generated samples)
         G = self.D(fake_data)
         G = G.mean(dim=0, keepdim=True)
-        self.manual_backward(G * one)   # compute the gradients in the graph?
+        self.manual_backward(G * mone)   # compute the gradients in the graph? yes. Max. g_loss
 
         # Update parameters in G
         g_loss = G
-        self.log("g_loss", g_loss, on_epoch=True, prog_bar=True)
+        self.log("g_loss", -g_loss, on_epoch=True, prog_bar=True)
         optimizer_g.step()
         optimizer_g.zero_grad()
         self.untoggle_optimizer(optimizer_g)
