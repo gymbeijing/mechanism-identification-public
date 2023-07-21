@@ -26,15 +26,15 @@ def main():
                                           filename="best_gan",
                                           save_top_k=1,
                                           verbose=True,
-                                          monitor="D_cost")   # Min. g_loss for GAN, D_cost for WGAN
+                                          monitor="D_loss")   # Min. g_loss for GAN, D_cost ("D_loss") for WGAN
     trainer = pl.Trainer(accelerator="gpu",
                          max_epochs=cfg.args.max_epochs,
                          logger=tb_logger,
                          callbacks=[checkpoint_callback])
     train_loader = get_dataloader(cfg)
-    # cfg = ConfigGAN('test')
-    # test_loader = get_dataloader('test', cfg)
-    trainer.fit(model, train_loader)
+    test_cfg = ConfigGAN('test')
+    test_loader = get_dataloader(test_cfg)
+    trainer.fit(model, train_loader, test_loader)
 
 
 if __name__ == '__main__':

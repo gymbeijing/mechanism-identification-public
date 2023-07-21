@@ -60,6 +60,9 @@ class WGAN(pl.LightningModule):
         self.scores_fake_data = []
         self.real_z = []
         self.fake_z = []
+        self.val_fake_z = []
+        self.val_real_z = []
+        self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
     def forward(self, noise):
         return self.G(noise)
@@ -139,8 +142,7 @@ class WGAN(pl.LightningModule):
         g_loss = G
         G_cost = -G
         self.log("G_loss", G_cost, on_epoch=True, prog_bar=True)   # Min. G_cost
-        # self.log("g_loss", g_loss, on_epoch=True, prog_bar=True)
-        optimizer_g.step()
+        # optimizer_g.step()
         optimizer_g.zero_grad()
         self.untoggle_optimizer(optimizer_g)
 
@@ -163,16 +165,37 @@ class WGAN(pl.LightningModule):
 
         return
 
-    # def validation_step(self, val_batch, batch_idx):
-    #     real_data, rand_c_emb = val_batch
-    #     real_data = real_data.view(real_data.size(0), -1)
-    #     bs = real_data.shape[0]
-    #
-    #     noise = torch.randn(bs, self.n_dim)
-    #     noise = noise.type_as(real_data)
-    #     noise = torch.cat((rand_c_emb, noise), 1)  # [bs, n_dim+z_dim], append the central part's emb to the front
-    #     # Generate fake data
-    #     fake_data = self.G(noise)
-    #
-    #     # TODO: calculate the cosine similarity within fake_data
+    def validation_step(self, val_batch, batch_idx):
+        real_data, rand_c_emb = val_batch
+        real_data = real_data.view(real_data.size(0), -1)
+        bs = real_data.shape[0]
+
+        noise = torch.randn(bs, self.n_dim)
+        noise = noise.type_as(real_data)
+        noise = torch.cat((rand_c_emb, noise), 1)  # [bs, n_dim+z_dim], append the central part's emb to the front
+        # Generate fake data
+        fake_data = self.G(noise)
+        self.val_fake_z.append(fake_data)
+        self.val_real_z.append(real_data)
+
+        return
+
+    def on_validation_epoch_end(self):
+        # TODO: calculate the cosine similarity within self.val_fake_data
+        val_fake_data = torch.cat(self.val_fake_z).reshape(-1, 512)   # [10377, 512]
+        val_real_data = torch.cat(self.val_real_z).reshape(-1, 512)  # [10377, 512]
+        first_fake = val_fake_data[0]
+        sim_scores_fake = self.cos(first_fake, val_fake_data)
+        first_real = val_real_data[0]
+        sim_scores_real = self.cos(first_real, val_real_data)
+        self.logger.experiment.add_histogram("Histogram of cosine similarity scores within fake z on validation set",
+                                             sim_scores_fake.cpu(),
+                                             self.current_epoch)
+        self.val_fake_z.clear()
+        self.logger.experiment.add_histogram("Histogram of cosine similarity scores within real z on validation set",
+                                             sim_scores_real.cpu(),
+                                             self.current_epoch)
+        self.val_real_z.clear()
+        return
+
 
