@@ -2,6 +2,7 @@ import torch.nn as nn
 import pytorch_lightning as pl   # version: 2.0.4
 import torch.optim
 import torch.nn.functional as F
+import torch.autograd as autograd
 
 
 class Generator(nn.Module):
@@ -52,6 +53,7 @@ class WGAN(pl.LightningModule):
         self.n_dim = cfg.n_dim
         self.h_dim = cfg.h_dim
         self.z_dim = cfg.z_dim
+        self.gp_lambda = cfg.gp_lambda
 
         self.save_hyperparameters()
         # Important: This property activates manual optimization.
@@ -72,6 +74,28 @@ class WGAN(pl.LightningModule):
         optimizerD = torch.optim.Adam(self.D.parameters(), lr=self.lr)
 
         return optimizerG, optimizerD
+
+    def calc_gradient_penalty(self, netD, real_data, fake_data):
+        bs = real_data.shape[0]
+        alpha = torch.rand(bs, 1)
+        alpha = alpha.expand(real_data.size())
+        alpha = alpha.cuda()
+
+        interpolates = alpha * real_data.detach() + ((1 - alpha) * fake_data.detach())
+
+        interpolates = interpolates.cuda()
+        interpolates.requires_grad_(True)
+
+        disc_interpolates = netD(interpolates)
+
+        gradients = autograd.grad(outputs=disc_interpolates, inputs=interpolates,
+                                  grad_outputs=torch.ones(disc_interpolates.size()).cuda(),
+                                  create_graph=True, retain_graph=True, only_inputs=True)[0]
+
+        gradients = gradients.view(gradients.size(0), -1)
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * self.gp_lambda  # LAMBDA
+
+        return gradient_penalty
 
     def training_step(self, train_batch, batch_idx):
         one = torch.FloatTensor([1])
@@ -112,9 +136,13 @@ class WGAN(pl.LightningModule):
         self.scores_fake_data.append(D_fake)
         self.manual_backward(D_fake * one)   # we want to max. -D_fake, which is equivalent to min. D_fake
 
+        gradient_penalty = self.calc_gradient_penalty(self.D, real_data, fake_data)
+        self.manual_backward(gradient_penalty)
+
+
         # Update parameters in D
         critic_loss = D_real - D_fake   # we want to max. critic_loss, so that D_fake and D_real can be largely separated
-        D_cost = D_fake - D_real   # we want to min. D_cost
+        D_cost = D_fake - D_real + gradient_penalty   # we want to min. D_cost
 
         self.log("D_loss", D_cost, on_epoch=True, prog_bar=True)   # Min. D_cost
         self.log("critic_loss", critic_loss, on_epoch=True, prog_bar=True)   # Max. critic loss
@@ -142,7 +170,7 @@ class WGAN(pl.LightningModule):
         g_loss = G
         G_cost = -G
         self.log("G_loss", G_cost, on_epoch=True, prog_bar=True)   # Min. G_cost
-        # optimizer_g.step()
+        optimizer_g.step()
         optimizer_g.zero_grad()
         self.untoggle_optimizer(optimizer_g)
 
@@ -181,7 +209,6 @@ class WGAN(pl.LightningModule):
         return
 
     def on_validation_epoch_end(self):
-        # TODO: calculate the cosine similarity within self.val_fake_data
         val_fake_data = torch.cat(self.val_fake_z).reshape(-1, 512)   # [10377, 512]
         val_real_data = torch.cat(self.val_real_z).reshape(-1, 512)  # [10377, 512]
         first_fake = val_fake_data[0]
