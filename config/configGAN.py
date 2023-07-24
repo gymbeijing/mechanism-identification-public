@@ -17,7 +17,7 @@ class ConfigGAN(object):
         self.z_dim = 512
 
         self.critic_iters = 5
-        self.gp_lambda = 10
+        self.gp_lambda = 5
 
     # @staticmethod
     def parse(self):

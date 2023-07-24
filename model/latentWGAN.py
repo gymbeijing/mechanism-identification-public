@@ -139,9 +139,8 @@ class WGAN(pl.LightningModule):
         gradient_penalty = self.calc_gradient_penalty(self.D, real_data, fake_data)
         self.manual_backward(gradient_penalty)
 
-
         # Update parameters in D
-        critic_loss = D_real - D_fake   # we want to max. critic_loss, so that D_fake and D_real can be largely separated
+        critic_loss = D_real - D_fake   # D wants to max. critic_loss, so that D_fake and D_real can be largely separated, G wants critic loss=0
         D_cost = D_fake - D_real + gradient_penalty   # we want to min. D_cost
 
         self.log("D_loss", D_cost, on_epoch=True, prog_bar=True)   # Min. D_cost
