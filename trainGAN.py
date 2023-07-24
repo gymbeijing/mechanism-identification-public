@@ -24,9 +24,10 @@ def main():
     ckpt_path = log_dir / "checkpoints"
     checkpoint_callback = ModelCheckpoint(dirpath=ckpt_path,
                                           filename="best_gan",
-                                          save_top_k=1,
+                                          save_last=True,
+                                          save_top_k=10,
                                           verbose=True,
-                                          monitor="D_loss")   # Min. g_loss for GAN, D_cost ("D_loss") for WGAN
+                                          monitor="critic_loss")   # Min. g_loss for GAN, D_cost ("D_loss") for WGAN
     trainer = pl.Trainer(accelerator="gpu",
                          max_epochs=cfg.args.max_epochs,
                          logger=tb_logger,
