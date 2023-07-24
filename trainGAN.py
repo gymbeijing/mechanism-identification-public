@@ -7,6 +7,9 @@ from pytorch_lightning.loggers import TensorBoardLogger
 import time
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pathlib import Path
+import torch
+import random
+import numpy as np
 
 
 def main():
@@ -26,6 +29,7 @@ def main():
                                           filename="best_gan",
                                           save_last=True,
                                           save_top_k=10,
+                                          every_n_epochs=50,
                                           verbose=True,
                                           monitor="critic_loss")   # Min. g_loss for GAN, D_cost ("D_loss") for WGAN
     trainer = pl.Trainer(accelerator="gpu",
@@ -39,4 +43,13 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    seed_list = []
+    for i in range(10):
+        seed = random.randint(0, 10000)
+        seed_list.append(seed)
+
+    for seed in seed_list:
+        torch.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
+        main()
