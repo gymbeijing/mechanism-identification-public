@@ -100,9 +100,9 @@ if __name__ == '__main__':
     sim_scores = compute_cosine_similarity(rec_seq, ori_seq)
     # print(sim_scores[0])   # Mode collapse encountered. Mode collapse fixed by introducing WGAN.
 
-    rec_seq = torch.stack(rec_seq, dim=0)
+    rec_seq = torch.stack(rec_seq, dim=0)   # Has randomness because of the noise
     ori_seq = torch.stack(ori_seq, dim=0)
 
     save_tensor(rec_seq, "./model_outputs/rec_seq_0724_204251_v9.pt")
-    save_tensor(rec_seq, "./model_outputs/ori_seq_0724_204251_v9.pt")
+    save_tensor(ori_seq, "./model_outputs/ori_seq_0724_204251_v9.pt")
 
