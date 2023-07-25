@@ -104,4 +104,5 @@ if __name__ == '__main__':
     ori_seq = torch.stack(ori_seq, dim=0)
 
     save_tensor(rec_seq, "./model_outputs/rec_seq_0724_204251_v9.pt")
+    save_tensor(rec_seq, "./model_outputs/ori_seq_0724_204251_v9.pt")
 
