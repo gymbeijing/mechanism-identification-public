@@ -23,13 +23,18 @@ def compute_cosine_similarity(pred, true):
     return scores
 
 
+def save_tensor(t, dest):
+    torch.save(t, dest)
+
+
 if __name__ == '__main__':
     # Load in checkpoints
     # gan_ckpt_file = 'lightning_logs/0718/105055/checkpoints/best_gan.ckpt'
-    gan_ckpt_file = 'lightning_logs/0720/100007/checkpoints/best_gan.ckpt'
+    gan_ckpt_file = 'lightning_logs/0724/204251/checkpoints/best_gan-v9.ckpt'   # WGAN
     gan_cfg = ConfigGAN('test')
     gan = WGAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
     gan.eval()
+    # Load in test loader for (W)GAN
     test_loader_for_gan = get_dataloader_for_gan(gan_cfg)
 
     ae_ckpt_file = 'lightning_logs/0717/170857/checkpoints/best.ckpt'
@@ -39,7 +44,7 @@ if __name__ == '__main__':
 
     # Generate z_hat from central part + noise
     batch_z_hat = []
-    batch_z = []   # no use?
+    batch_z = []   # not used
     for batch_idx, batch in enumerate(test_loader_for_gan):
         real_z, c_emb = batch
         real_z = real_z.view(real_z.size(0), -1)
@@ -88,9 +93,15 @@ if __name__ == '__main__':
             ori_seq.append(input_seq)
 
     # find the pad for ori, compute the 'mask'
-    eps = 0.1
+    eps = 0.2
+    threshold = 0.5
 
-    # normalization in need for rec_seq?
+    # normalization in need for rec_seq? think not
     sim_scores = compute_cosine_similarity(rec_seq, ori_seq)
-    print(sim_scores[0])   # Mode collapse encountered
+    # print(sim_scores[0])   # Mode collapse encountered. Mode collapse fixed by introducing WGAN.
+
+    rec_seq = torch.stack(rec_seq, dim=0)
+    ori_seq = torch.stack(ori_seq, dim=0)
+
+    save_tensor(rec_seq, "./model_outputs/rec_seq_0724_204251_v9.pt")
 
