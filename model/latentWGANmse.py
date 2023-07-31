@@ -105,10 +105,9 @@ class WGAN(pl.LightningModule):
 
         return gradient_penalty
 
-    def calc_mse(self, fake_data, real_data):
-        rec = self.ae.decode(fake_data)   # [bs, 5120]?
-        ori = self.ae.decode(real_data)   # [bs, 5120]?
-        loss = F.mse_loss(rec[:512], ori[:512])
+    def calc_mse(self, fake_data, real_c):
+        rec = self.ae.decode(fake_data)   # [bs, 5120]
+        loss = F.mse_loss(rec[:, :512], real_c)
 
         return loss
 
@@ -180,12 +179,12 @@ class WGAN(pl.LightningModule):
         G = G.mean(dim=0, keepdim=True)
         self.manual_backward(G * mone, retain_graph=True)   # we want to max. G
 
-        mse = self.calc_mse(fake_data, real_data)
+        mse = self.calc_mse(fake_data, rand_c_emb)
         self.manual_backward(mse)
 
         # Update parameters in G
         g_loss = G
-        G_cost = -G
+        G_cost = -G + mse
         self.log("G_loss", G_cost, on_epoch=True, prog_bar=True)   # Min. G_cost
         optimizer_g.step()
         optimizer_g.zero_grad()
