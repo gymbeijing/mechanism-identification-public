@@ -65,7 +65,8 @@ if __name__ == '__main__':
     assert all_z_hat.shape == all_z.shape, "all_z_hat and all_z are not having the same shape"
 
     # Input generated z_hat to the trained Decoder in AE
-    test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
+    # test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
+    test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z, ae_cfg)
     test_loader_for_ae = get_dataloader_for_ae('test', ae_cfg)   # input
 
     # Store the predicted sequence for each data point
@@ -92,10 +93,6 @@ if __name__ == '__main__':
             input_seq = input_seq.reshape((-1, 512))   # [10, 512]
             ori_seq.append(input_seq)
 
-    # find the pad for ori, compute the 'mask'
-    eps = 0.2
-    threshold = 0.5
-
     # normalization in need for rec_seq? think not
     sim_scores = compute_cosine_similarity(rec_seq, ori_seq)
     # print(sim_scores[0])   # Mode collapse encountered. Mode collapse fixed by introducing WGAN.
@@ -103,6 +100,6 @@ if __name__ == '__main__':
     rec_seq = torch.stack(rec_seq, dim=0)   # Has randomness because of the noise
     ori_seq = torch.stack(ori_seq, dim=0)
 
-    save_tensor(rec_seq, "./model_outputs/rec_seq_0724_204251_v9.pt")
-    save_tensor(ori_seq, "./model_outputs/ori_seq_0724_204251_v9.pt")
+    save_tensor(rec_seq, "./model_outputs/rec_seq_real_0724_204251_v9.pt")
+    # save_tensor(ori_seq, "./model_outputs/ori_seq_0724_204251_v9.pt")
 
