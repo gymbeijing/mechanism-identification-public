@@ -1,7 +1,8 @@
 from config.configGAN import ConfigGAN
 from data.lgan_dataset import get_dataloader
 from model.latentGAN import GAN
-from model.latentWGAN import WGAN
+# from model.latentWGAN import WGAN
+from model.latentWGANmse import WGAN
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import time
@@ -43,13 +44,14 @@ def main():
 
 
 if __name__ == '__main__':
-    seed_list = []
-    for i in range(10):
-        seed = random.randint(0, 10000)
-        seed_list.append(seed)
-
-    for seed in seed_list:
-        torch.manual_seed(seed)
-        random.seed(seed)
-        np.random.seed(seed)
-        main()
+    # seed_list = []
+    # for i in range(10):
+    #     seed = random.randint(0, 10000)
+    #     seed_list.append(seed)
+    #
+    # for seed in seed_list:
+    #     torch.manual_seed(seed)
+    #     random.seed(seed)
+    #     np.random.seed(seed)
+    #     main()
+    main()
