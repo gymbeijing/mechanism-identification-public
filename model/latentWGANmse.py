@@ -181,6 +181,7 @@ class WGAN(pl.LightningModule):
 
         mse = self.calc_mse(fake_data, rand_c_emb)
         self.manual_backward(mse)
+        self.log("train_mse_loss", mse, on_epoch=True, prog_bar=True)
 
         # Update parameters in G
         g_loss = G
@@ -221,6 +222,9 @@ class WGAN(pl.LightningModule):
         fake_data = self.G(noise)
         self.val_fake_z.append(fake_data)
         self.val_real_z.append(real_data)
+
+        mse = self.calc_mse(fake_data, rand_c_emb)
+        self.log("test_mse_loss", mse, on_epoch=True, prog_bar=True)
 
         return
 

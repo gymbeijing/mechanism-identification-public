@@ -1,6 +1,7 @@
 from config.configGAN import ConfigGAN
 from model.latentGAN import GAN
-from model.latentWGAN import WGAN
+# from model.latentWGAN import WGAN
+from model.latentWGANmse import WGAN
 from data.lgan_dataset import get_dataloader as get_dataloader_for_gan
 import torch
 from model.autoencoder import AutoEncoder
@@ -30,7 +31,8 @@ def save_tensor(t, dest):
 if __name__ == '__main__':
     # Load in checkpoints
     # gan_ckpt_file = 'lightning_logs/0718/105055/checkpoints/best_gan.ckpt'
-    gan_ckpt_file = 'lightning_logs/0724/204251/checkpoints/best_gan-v9.ckpt'   # WGAN
+    # gan_ckpt_file = 'lightning_logs/0724/204251/checkpoints/best_gan-v9.ckpt'   # WGAN
+    gan_ckpt_file = 'lightning_logs/0731/135008/checkpoints/best_gan-v6.ckpt'  # WGAN w/ mse
     gan_cfg = ConfigGAN('test')
     gan = WGAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
     gan.eval()
@@ -65,8 +67,8 @@ if __name__ == '__main__':
     assert all_z_hat.shape == all_z.shape, "all_z_hat and all_z are not having the same shape"
 
     # Input generated z_hat to the trained Decoder in AE
-    # test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
-    test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z, ae_cfg)
+    test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
+    # test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z, ae_cfg)
     test_loader_for_ae = get_dataloader_for_ae('test', ae_cfg)   # input
 
     # Store the predicted sequence for each data point
@@ -100,6 +102,6 @@ if __name__ == '__main__':
     rec_seq = torch.stack(rec_seq, dim=0)   # Has randomness because of the noise
     ori_seq = torch.stack(ori_seq, dim=0)
 
-    save_tensor(rec_seq, "./model_outputs/rec_seq_real_0724_204251_v9.pt")
-    # save_tensor(ori_seq, "./model_outputs/ori_seq_0724_204251_v9.pt")
+    save_tensor(rec_seq, "./model_outputs/rec_seq_fake_0731_135008_v6.pt")
+    save_tensor(ori_seq, "./model_outputs/ori_seq_0731_135008_v6.pt")
 
