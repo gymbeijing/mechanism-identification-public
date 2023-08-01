@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # Load in checkpoints
     # gan_ckpt_file = 'lightning_logs/0718/105055/checkpoints/best_gan.ckpt'
     # gan_ckpt_file = 'lightning_logs/0724/204251/checkpoints/best_gan-v9.ckpt'   # WGAN
-    gan_ckpt_file = 'lightning_logs/0731/173131/checkpoints/last.ckpt'  # WGAN w/ mse
+    gan_ckpt_file = 'lightning_logs/0801/161839/checkpoints/last.ckpt'  # WGAN w/ mse
     gan_cfg = ConfigGAN('test')
     gan = WGAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
     gan.eval()
@@ -102,6 +102,6 @@ if __name__ == '__main__':
     rec_seq = torch.stack(rec_seq, dim=0)   # Has randomness because of the noise
     ori_seq = torch.stack(ori_seq, dim=0)
 
-    save_tensor(rec_seq, "./model_outputs/rec_seq_0731_173131_last.pt")
-    save_tensor(ori_seq, "./model_outputs/ori_seq_0731_173131_last.pt")
+    save_tensor(rec_seq, "./model_outputs/rec_seq_0801_161839_last.pt")
+    save_tensor(ori_seq, "./model_outputs/ori_seq_0801_161839_last.pt")
 
