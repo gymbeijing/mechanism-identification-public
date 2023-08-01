@@ -107,7 +107,8 @@ class WGAN(pl.LightningModule):
 
     def calc_mse(self, fake_data, real_c):
         rec = self.ae.decode(fake_data)   # [bs, 5120]
-        loss = F.mse_loss(rec[:, :512], real_c)
+        bs, _ = rec.shape
+        loss = F.mse_loss(rec[:, :512], real_c, reduction='sum') / bs
 
         return loss
 
