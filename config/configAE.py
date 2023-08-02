@@ -23,6 +23,8 @@ class ConfigAE(object):
 		parser.add_argument('--lr', type=float, default=1e-3, help="initial learning rate")
 		parser.add_argument('--emb_dir', type=str, default="../processed_data", help="directory to the saved embeddings")
 		parser.add_argument('--n_neighbour', type=int, default=9, help="number of neighbouring parts for each central part")
+		####### of no use, just a temporary fix for the bash script running problem
+		parser.add_argument('--mse_lambda', type=int, default=1, help="weights for the mse loss")
 
 		args = parser.parse_args()
 		return parser, args
