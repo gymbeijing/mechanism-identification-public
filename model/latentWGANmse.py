@@ -56,6 +56,7 @@ class WGAN(pl.LightningModule):
         self.h_dim = cfg.h_dim
         self.z_dim = cfg.z_dim
         self.gp_lambda = cfg.gp_lambda
+        self.mse_lambda = cfg.mse_lambda
 
         self.save_hyperparameters()
         # Important: This property activates manual optimization.
@@ -105,10 +106,10 @@ class WGAN(pl.LightningModule):
 
         return gradient_penalty
 
-    def calc_mse(self, fake_data, real_c):
+    def calc_mse(self, fake_data, real_c, mse_lambda=1):
         rec = self.ae.decode(fake_data)   # [bs, 5120]
         bs, _ = rec.shape
-        loss = F.mse_loss(rec[:, :512], real_c, reduction='sum') / bs
+        loss = mse_lambda * F.mse_loss(rec[:, :512], real_c, reduction='sum') / bs
 
         return loss
 

@@ -30,6 +30,7 @@ class ConfigGAN(object):
                             help="directory to the saved latent variables")
         parser.add_argument('--c_emb_file', type=str, default=f"./processed_data/center_emb_{self.phase}.pt",
                             help="directory to the saved latent variables")
+        parser.add_argument('--mse_lambda', type=int, default=1, help="weights for the mse loss")
 
         args = parser.parse_args()
         return parser, args
