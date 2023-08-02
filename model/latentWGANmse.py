@@ -57,6 +57,7 @@ class WGAN(pl.LightningModule):
         self.z_dim = cfg.z_dim
         self.gp_lambda = cfg.gp_lambda
         self.mse_lambda = cfg.mse_lambda
+        print(f'lambda: {self.mse_lambda}')
 
         self.save_hyperparameters()
         # Important: This property activates manual optimization.
