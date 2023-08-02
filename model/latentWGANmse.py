@@ -56,7 +56,7 @@ class WGAN(pl.LightningModule):
         self.h_dim = cfg.h_dim
         self.z_dim = cfg.z_dim
         self.gp_lambda = cfg.gp_lambda
-        self.mse_lambda = cfg.mse_lambda
+        self.mse_lambda = cfg.args.mse_lambda
         print(f'lambda: {self.mse_lambda}')
 
         self.save_hyperparameters()
