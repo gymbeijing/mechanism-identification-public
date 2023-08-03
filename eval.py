@@ -27,6 +27,8 @@ def compute_cosine_similarity(pred, true):
 def save_tensor(t, dest):
     torch.save(t, dest)
 
+    return
+
 
 if __name__ == '__main__':
     # Load in checkpoints

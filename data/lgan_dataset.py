@@ -1,6 +1,14 @@
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, TensorDataset
 import torch
 import random
+
+
+def get_dataloader_from_tensor(tensor, config, shuffle=None):
+    is_shuffle = False if shuffle is None else True
+    my_dataset = TensorDataset(tensor)
+    my_dataloader = DataLoader(my_dataset, batch_size=config.args.batch_size, shuffle=is_shuffle)
+
+    return my_dataloader
 
 
 def get_dataloader(config, shuffle=None):
