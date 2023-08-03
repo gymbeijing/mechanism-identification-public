@@ -25,10 +25,10 @@ if __name__ == '__main__':
     gan = WGAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
     gan.eval()
     # Load query embeddings into testloader for (W)GAN
-    queries = torch.load('../processed_data/clip_query_embs.pt')
+    queries = torch.load('processed_data/clip_query_embs.pt')
     test_loader_for_gan = get_dataloader_for_query(queries, gan_cfg)
 
-    ae_ckpt_file = '../lightning_logs/0717/170857/checkpoints/best.ckpt'
+    ae_ckpt_file = 'lightning_logs/0717/170857/checkpoints/best.ckpt'
     ae_cfg = ConfigAE('test')
     ae = AutoEncoder.load_from_checkpoint(ae_ckpt_file, cfg=ae_cfg)
     ae.eval()
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     for batch_idx, batch_query in enumerate(test_loader_for_gan):
 
         # Sample noise
+        batch_query = batch_query[0]
         bs = batch_query.shape[0]
         noise = torch.randn(bs, gan_cfg.n_dim)
         # Append central part embedding
@@ -67,4 +68,4 @@ if __name__ == '__main__':
             rec_norm.append(LA.norm(predicted_seq, dim=1))  # [10,]?
 
     rec_seq = torch.stack(rec_seq, dim=0)  # Has randomness because of the noise
-    save_tensor(rec_seq, "../model_outputs/query_seq_0801_161839_last.pt")
+    save_tensor(rec_seq, "model_outputs/query_seq_0801_161839_last.pt")
