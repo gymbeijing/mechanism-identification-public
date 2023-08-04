@@ -64,10 +64,12 @@ def pool_embedding(emb_dict, strategy='mean'):
 
 
 def save_emb_to_file(emb, metadata, args):
-	print(f'Saving {args.pooling_strategy} pooled embeddings to {args.embs_folder}/{args.pooling_strategy}_pooled_emb.pt')
-	torch.save(emb, f'{args.embs_folder}/{args.pooling_strategy}_pooled_emb.pt')
-	print(f'Saving filtered embedding metadata to {args.embs_folder}/emb_idx_filtered.json')
-	with open(f'{args.embs_folder}/emb_idx_filtered.json', 'w') as fw:
+	emb_path = f'{args.embs_folder}/abc_{args.pooling_strategy}_pooled_emb.pt'
+	print(f'Saving {args.pooling_strategy} pooled embeddings to ' + emb_path)
+	torch.save(emb, emb_path)
+	metadata_path = f'{args.embs_folder}/abc_emb_idx_filtered.json'
+	print(f'Saving filtered embedding metadata to ' + metadata_path)
+	with open(metadata_path, 'w') as fw:
 		json.dump(metadata, fw, indent=4, ensure_ascii=False, sort_keys=False)
 
 	return
@@ -81,17 +83,17 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	# Load in all the image embeddings
-	emb_filepaths = glob.glob(f'{args.embs_folder}/*.pt')
-	metadata_filepaths = glob.glob(f'{args.embs_folder}/*.json')
-	#print(emb_filepaths)
-	#print(metadata_filepaths)
+	emb_filepaths = glob.glob(f'{args.embs_folder}/abc*.pt')   # 24
+	metadata_filepaths = glob.glob(f'{args.embs_folder}/abc*.json')   # 24
+	# print(len(emb_filepaths))
+	# print(len(metadata_filepaths))
 
 	# Load embedding metadata into a dictionary
 	metadata_dict = load_metadata(metadata_filepaths)
-	
+
 	# Compute the intersect parts name
-	intersect = compute_intersect(metadata_dict)   # 141245
-	
+	intersect = compute_intersect(metadata_dict)   # 423
+
 	# Load embedding into a dictionary
 	emb_dict = load_emb(emb_filepaths)
 
@@ -99,6 +101,7 @@ if __name__ == '__main__':
 	emb_dict, new_metadata = filter_emb(emb_dict, intersect, metadata_dict)
 
 	# Pool embeddings according to the pooling strategy
-	pooled_emb = pool_embedding(emb_dict, args.pooling_strategy)   # [141245, 512]
+	pooled_emb = pool_embedding(emb_dict, args.pooling_strategy)   # [423, 512]
+	print(pooled_emb.shape)
 
 	save_emb_to_file(pooled_emb, new_metadata, args)
