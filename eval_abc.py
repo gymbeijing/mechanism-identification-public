@@ -25,7 +25,7 @@ if __name__ == '__main__':
     gan = WGAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
     gan.eval()
     # Load query embeddings into testloader for (W)GAN
-    queries = torch.load('processed_data/clip_mech_query_embs.pt')
+    queries = torch.load('processed_data/abc_mean_pooled_emb.pt')
     test_loader_for_gan = get_dataloader_for_query(queries, gan_cfg)
 
     ae_ckpt_file = 'lightning_logs/0717/170857/checkpoints/best.ckpt'
@@ -68,4 +68,4 @@ if __name__ == '__main__':
             rec_norm.append(LA.norm(predicted_seq, dim=1))  # [10,]?
 
     rec_seq = torch.stack(rec_seq, dim=0)  # Has randomness because of the noise
-    save_tensor(rec_seq, "model_outputs/mech_query_seq_0801_161839_last.pt")
+    save_tensor(rec_seq, "model_outputs/abc_query_seq_0801_161839_last.pt")
