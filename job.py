@@ -145,7 +145,8 @@ if __name__ == '__main__':
     eps = 0.5
     threshold = 0.5
 
-    all_decoded_seq_list = decode_seq_3_fast(abc_query_seq, 2, all_query_norm_list)
+    print(f'Number of data items: {abc_query_seq.shape[0]}')
+    all_decoded_seq_list = decode_seq_3_fast(abc_query_seq, abc_query_seq.shape[0], all_query_norm_list)
     with open(f'./model_outputs/abc_decoded_seq_list_3.json', 'w', encoding='utf8') as fp:  # maybe filtered_assembly_ids.json is a better name
         json.dump(all_decoded_seq_list, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
