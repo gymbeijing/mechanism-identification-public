@@ -83,8 +83,8 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	# Load in all the image embeddings
-	emb_filepaths = glob.glob(f'{args.embs_folder}/abc*.pt')   # 24
-	metadata_filepaths = glob.glob(f'{args.embs_folder}/abc*.json')   # 24
+	emb_filepaths = glob.glob(f'{args.embs_folder}/abc_clip_emb_*.pt')   # 24
+	metadata_filepaths = glob.glob(f'{args.embs_folder}/abc_emb_idx_*.json')   # 24
 	# print(len(emb_filepaths))
 	# print(len(metadata_filepaths))
 

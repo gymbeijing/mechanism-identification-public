@@ -34,13 +34,13 @@ class ABCPartImageDataset(Dataset):
 
 
 def get_body_id(in_list):
-    out_set = set()
+    out = []
     for img_name in in_list:
         body_id = '_'.join('/'.join(img_name.split('/')[-3:]).split('_')[:-1])  # keep the chunk name
-        if body_id not in out_set:
-            out_set.add(body_id)
+        if body_id not in out:
+            out.append(body_id)
 
-    return list(out_set)
+    return out
 
 
 def get_emb(dataloader, model):
@@ -94,13 +94,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_folder', type=str, default='png_txt_small/',
                         help='Path to the directory that saves part images')
-    parser.add_argument('--vid', type=str, default='00',
+    parser.add_argument('--vid', type=str, default='01',
                         help='The view id')
     args = parser.parse_args()
 
     vid = args.vid
     image_folder = args.image_folder
-    image_list = sorted(glob.glob(image_folder + '*/*.png'))  # 10152, in alphabetical order
+    image_list = sorted(glob.glob(image_folder + '*/*.png'))  # 10152, in alphabetical order, to maintain order in the metadata
 
     body_id_list = get_body_id(image_list)  # 423
 
