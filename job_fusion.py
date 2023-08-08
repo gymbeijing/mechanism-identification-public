@@ -7,8 +7,6 @@ from torch import linalg as LA
 import numpy as np
 from matplotlib.pyplot import plot
 from tqdm import tqdm
-from PIL import Image, ImageDraw, ImageFont
-from IPython.display import display, Markdown, display_markdown # to display images
 
 
 def load_saved_tensor(filepath):
@@ -108,10 +106,8 @@ def decode_seq_3_fast(in_seq, head_number, all_norm_list):
 
 if __name__ == '__main__':
     rec_seq_path = "model_outputs/rec_seq_0801_161839_last.pt"
-    ori_seq_path = "model_outputs/ori_seq_0801_161839_last.pt"
 
     rec_seq = load_saved_tensor(rec_seq_path)  # [10377, 10, 512]
-    ori_seq = load_saved_tensor(ori_seq_path)  # [10377, 10, 512]
 
     all_emb_path = os.path.join("./processed_data", "mean_pooled_emb.pt")
     all_emb = load_saved_tensor(all_emb_path)  # [141245, 512]
@@ -132,21 +128,17 @@ if __name__ == '__main__':
         all_part_graph.keys())  # 5462: # assemblies having contact info, also # assemblies in the part graph
     print(f'Number of assemblies having contact information / included in the part graph: {len(valid_aid_list)}')
 
-    abc_query_seq_path = "model_outputs/abc_query_seq_0801_161839_last.pt"
-    abc_query_seq = load_saved_tensor(abc_query_seq_path)
-    print(f'Number of abc image queries: {abc_query_seq.shape[0]}')
+    perm = torch.randperm(rec_seq.size(0))
+    indices = perm[:1000]
+    rec_seq_sample = rec_seq[indices]
 
-    abc_md_path = './processed_data/abc_emb_idx_filtered.json'
-    abc_md = load_json(abc_md_path)
-    assert abc_query_seq.shape[0] == len(abc_md)
-
-    all_query_norm_list = compute_norm(abc_query_seq)
+    all_rec_norm_list = compute_norm(rec_seq_sample)
 
     eps = 0.5
     threshold = 0.5
 
-    print(f'Number of data items: {abc_query_seq.shape[0]}')
-    all_decoded_seq_list = decode_seq_3_fast(abc_query_seq, abc_query_seq.shape[0], all_query_norm_list)
-    with open(f'./model_outputs/abc_decoded_seq_list_3.json', 'w', encoding='utf8') as fp:  # maybe filtered_assembly_ids.json is a better name
+    print(f'Number of data items: {rec_seq_sample.shape[0]}')
+    all_decoded_seq_list = decode_seq_3_fast(rec_seq, rec_seq_sample.shape[0], all_rec_norm_list)
+    with open(f'./model_outputs/rec_decoded_seq_list_3.json', 'w', encoding='utf8') as fp:  # maybe filtered_assembly_ids.json is a better name
         json.dump(all_decoded_seq_list, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
