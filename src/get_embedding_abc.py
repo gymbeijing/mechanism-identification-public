@@ -89,6 +89,29 @@ def save_emb(ids, embs, dirname, vid):
     return
 
 
+def get_mech_query(in_list, the_map):
+    out_list = []
+    for item in in_list:
+        body_uuid = item.split('/')[-1]
+        out_list.append(the_map[body_uuid])
+
+    return out_list
+
+
+def load_json(path):
+    with open(path) as fp:
+        data = json.load(fp)
+
+    return data
+
+
+def save_json(dict, path):
+    with open(path, 'w', encoding='utf8') as fp:
+        json.dump(dict, fp, indent=4, ensure_ascii=False, sort_keys=False)
+
+    return
+
+
 if __name__ == '__main__':
     # Parse the arguments
     parser = argparse.ArgumentParser()
@@ -103,6 +126,17 @@ if __name__ == '__main__':
     image_list = sorted(glob.glob(image_folder + '*/*.png'))  # 10152, in alphabetical order, to maintain order in the metadata
 
     body_id_list = get_body_id(image_list)  # 423
+
+    abc_mechanism_data_from_cloud = load_json('./raw_data/abc_mechanism_data_from_cloud.json')
+
+    body_uuid_query_map = dict()
+    for document_dict in abc_mechanism_data_from_cloud:
+        for match in document_dict["matches"]:
+            body_uuid_query_map[match['body_uuid']] = match["query"]
+
+    mech_query_list = get_mech_query(body_id_list, body_uuid_query_map)
+    save_json(mech_query_list, './model_outputs/mech_query_423.json')
+
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(device)
