@@ -78,6 +78,7 @@ def decode_seq_3_fast(in_seq, head_number, all_norm_list):
 
         seq_dist = torch.stack(seq_dist, dim=1)  # [141245, 10]
         all_decoded_seq_dict = dict()
+        len_indices_equals_zero_flag = False
         for aid in valid_aid_list:
             indices = aid_to_part_indice_map[aid]
             decoded_seq = []
@@ -89,6 +90,7 @@ def decode_seq_3_fast(in_seq, head_number, all_norm_list):
                 if all_norm_list[i][j] < eps:  # if norm < eps, stop decoding, should check on the first(central) part?
                     break
                 if len(indices) == 0:
+                    len_indices_equals_zero_flag = True
                     break
                 min_val = torch.min(torch.index_select(seq_dist[:, j], 0, torch.LongTensor(indices))).item()
                 idx_tuple = (seq_dist == min_val).nonzero(as_tuple=True)[
@@ -100,7 +102,8 @@ def decode_seq_3_fast(in_seq, head_number, all_norm_list):
                         break
                 indices.remove(idx)
                 total += 1
-            all_decoded_seq_dict[aid] = (decoded_seq, total_dist / total if total != 0 else 100000)
+            if not len_indices_equals_zero_flag:
+                all_decoded_seq_dict[aid] = (decoded_seq, total_dist / total if total != 0 else 100000)
         all_decoded_seq_list.append(all_decoded_seq_dict)
 
     return all_decoded_seq_list
