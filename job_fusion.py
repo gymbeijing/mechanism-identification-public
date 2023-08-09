@@ -7,6 +7,12 @@ from torch import linalg as LA
 import numpy as np
 from matplotlib.pyplot import plot
 from tqdm import tqdm
+import random
+
+
+def save_tensor(t, filepath):
+    torch.save(t, filepath)
+    return
 
 
 def load_saved_tensor(filepath):
@@ -104,6 +110,40 @@ def decode_seq_3_fast(in_seq, head_number, all_norm_list):
     return all_decoded_seq_list
 
 
+def decode_seq_3_random(in_seq, head_number, all_norm_list):
+    all_decoded_seq_list = []
+    for i, seq in tqdm(enumerate(in_seq[:head_number, :, :])):
+        seq_dist = []
+        for j, rec_emb in enumerate(seq):
+            delta = all_emb - rec_emb  # [141245, 512]
+            emb_dist = LA.norm(delta, dim=1)
+            seq_dist.append(emb_dist)
+
+        seq_dist = torch.stack(seq_dist, dim=1)  # [141245, 10]
+        all_decoded_seq_dict = dict()
+        for aid in valid_aid_list:
+            indices = aid_to_part_indice_map[aid]
+            decoded_seq = []
+            indices = indices.copy()
+            total_dist = 0.0
+            total = 0
+            # sequential search
+            for j, rec_emb in enumerate(seq):
+                if all_norm_list[i][j] < eps:  # if norm < eps, stop decoding, should check on the first(central) part?
+                    break
+                if len(indices) == 0:
+                    break
+                idx = random.choice(indices)
+                decoded_seq.append(idx)
+                total_dist += seq_dist[idx, j].item()
+                indices.remove(idx)
+                total += 1
+            all_decoded_seq_dict[aid] = (decoded_seq, total_dist / total if total != 0 else 100000)
+        all_decoded_seq_list.append(all_decoded_seq_dict)
+
+    return all_decoded_seq_list
+
+
 if __name__ == '__main__':
     rec_seq_path = "model_outputs/rec_seq_0801_161839_last.pt"
 
@@ -129,7 +169,8 @@ if __name__ == '__main__':
     print(f'Number of assemblies having contact information / included in the part graph: {len(valid_aid_list)}')
 
     perm = torch.randperm(rec_seq.size(0))
-    indices = perm[:1000]
+    indices = perm[:100]
+    torch.save(indices, './model_outputs/rand_indices_1000_for_fusion.pt')
     rec_seq_sample = rec_seq[indices]
 
     all_rec_norm_list = compute_norm(rec_seq_sample)
@@ -138,7 +179,7 @@ if __name__ == '__main__':
     threshold = 0.5
 
     print(f'Number of data items: {rec_seq_sample.shape[0]}')
-    all_decoded_seq_list = decode_seq_3_fast(rec_seq, rec_seq_sample.shape[0], all_rec_norm_list)
-    with open(f'./model_outputs/rec_decoded_seq_list_3.json', 'w', encoding='utf8') as fp:  # maybe filtered_assembly_ids.json is a better name
+    all_decoded_seq_list = decode_seq_3_random(rec_seq, rec_seq_sample.shape[0], all_rec_norm_list)
+    with open(f'./model_outputs/rec_decoded_seq_list_3_random.json', 'w', encoding='utf8') as fp:  # maybe filtered_assembly_ids.json is a better name
         json.dump(all_decoded_seq_list, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
