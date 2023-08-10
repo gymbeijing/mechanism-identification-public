@@ -141,7 +141,7 @@ def eval_iou(decoded_seq_list, k=10):
         max_max_iou_score = 0.0
         kept_a = None
         for aid, (seq, avg_dist) in ordered_topk_decoded_seq:
-            result = dict()
+
             aid_part_graph = all_part_graph[aid]  # obtain all the part graphs associated with aid
             aid_part_graph = transform(aid_part_graph)  # map list of md --> list of idx
             c_part = seq[0]  # central part idx
@@ -170,12 +170,17 @@ def eval_iou(decoded_seq_list, k=10):
                 max_max_iou_score = max_iou_score
                 kept_a = aid
 
-            result["num_nodes"] = len(aid_to_part_indice_map[aid])
-            result["seq_length"] = 1 + len(n_parts_pred)
-            result["k"] = k
-            result["iou_score"] = max_iou_score
+            # result["num_nodes"] = len(aid_to_part_indice_map[aid])
+            # result["seq_length"] = 1 + len(n_parts_pred)
+            # result["k"] = k
+            # result["iou_score"] = max_iou_score
+            key = (aid, len(aid_to_part_indice_map[aid]), 1 + len(n_parts_pred), k)
+            if key in result:
+                result[key].append(max_iou_score)
+            else:
+                result[key] = []
+                result[key].append(max_iou_score)
 
-            aid_result_map[aid].append(result)
         if kept_a is None:
             len_topk_a.append(0)
         else:
@@ -185,6 +190,19 @@ def eval_iou(decoded_seq_list, k=10):
         max_max_iou_score_list.append(max_max_iou_score)
 
     return max_max_iou_list, max_max_iou_score_list, len_topk_a
+
+
+def reformat_result():
+    for (aid, num_nodes, seq_length, k), iou_list in result.items():
+        temp = dict()
+        temp["num_nodes"] = num_nodes
+        temp["seq_length"] = seq_length
+        temp["k"] = k
+        # temp["iou_score"] = np.array(iou_list).mean()
+        temp["iou_score"] = iou_list
+        aid_result_map[aid].append(temp)
+
+    return
 
 
 if __name__ == '__main__':
@@ -210,13 +228,16 @@ if __name__ == '__main__':
     all_decoded_seq_list = load_json('./model_outputs/rec_decoded_seq_list_3_100_disposed.json')
 
     aid_result_map = init_map()
+    result = dict()
 
     res = []
     klist = [1, 5, 10]
     for k in klist:
         res.append(eval_iou(all_decoded_seq_list, k))
 
-    save_json(aid_result_map, './model_outputs/iou_by_assembly.json')
+    reformat_result()
+
+    save_json(aid_result_map, './model_outputs/iou_list_by_assembly.json')
 
     # res = []
     # k = 1
@@ -237,6 +258,6 @@ if __name__ == '__main__':
     #
     # print(length_mean_iou_map)
     # print(f'k = 1: avg_iou: {np.array(res[0][0]).mean()}, avg_iou_score: {np.array(res[0][1]).mean()}')
-    # # print(f'k = 5: avg_iou: {sum(res[1][0]) / len(res[1][0])}, avg_iou_score: {sum(res[1][1]) / len(res[1][1])}')
-    # # print(f'k = 10: avg_iou: {sum(res[2][0]) / len(res[2][0])}, avg_iou_score: {sum(res[2][1]) / len(res[2][1])}')
+    # print(f'k = 5: avg_iou: {sum(res[1][0]) / len(res[1][0])}, avg_iou_score: {sum(res[1][1]) / len(res[1][1])}')
+    # print(f'k = 10: avg_iou: {sum(res[2][0]) / len(res[2][0])}, avg_iou_score: {sum(res[2][1]) / len(res[2][1])}')
 
