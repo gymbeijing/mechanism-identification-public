@@ -175,8 +175,8 @@ if __name__ == '__main__':
     print(f'Number of assemblies having contact information / included in the part graph: {len(valid_aid_list)}')
 
     perm = torch.randperm(rec_seq.size(0))
-    indices = perm[:10]
-    torch.save(indices, './model_outputs/indices_10_for_fusion.pt')
+    indices = perm[:1000]
+    torch.save(indices, './model_outputs/indices_1000_for_fusion.pt')
     rec_seq_sample = rec_seq[indices]
 
     all_rec_norm_list = compute_norm(rec_seq_sample)
@@ -186,6 +186,6 @@ if __name__ == '__main__':
 
     print(f'Number of data items: {rec_seq_sample.shape[0]}')
     all_decoded_seq_list = decode_seq_3_fast(rec_seq, rec_seq_sample.shape[0], all_rec_norm_list)
-    with open(f'./model_outputs/rec_decoded_seq_list_3_10.json', 'w', encoding='utf8') as fp:  # maybe filtered_assembly_ids.json is a better name
+    with open(f'./model_outputs/rec_decoded_seq_list_3_1000_disposed.json', 'w', encoding='utf8') as fp:  # maybe filtered_assembly_ids.json is a better name
         json.dump(all_decoded_seq_list, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
