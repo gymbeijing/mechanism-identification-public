@@ -30,6 +30,13 @@ def load_saved_tensor(filepath):
     return t
 
 
+def save_json(dict, path):
+    with open(path, 'w', encoding='utf8') as fp:
+        json.dump(dict, fp, indent=4, ensure_ascii=False, sort_keys=False)
+
+    return
+
+
 def load_json(filepath):
     with open(filepath, 'r') as fp:
         j = json.load(fp)  # .shape[0]=141245
@@ -115,6 +122,14 @@ def search_duplicate(c_part_idx, aid, eps=1e-3):
     return c_part_dup_list
 
 
+def init_map():
+    the_map = dict()
+    for valid_aid in valid_aid_list:
+        the_map[valid_aid] = []
+
+    return the_map
+
+
 def eval_iou(decoded_seq_list, k=10):
     max_max_iou_list = []
     max_max_iou_score_list = []
@@ -126,7 +141,7 @@ def eval_iou(decoded_seq_list, k=10):
         max_max_iou_score = 0.0
         kept_a = None
         for aid, (seq, avg_dist) in ordered_topk_decoded_seq:
-            kept_a = aid
+            result = dict()
             aid_part_graph = all_part_graph[aid]  # obtain all the part graphs associated with aid
             aid_part_graph = transform(aid_part_graph)  # map list of md --> list of idx
             c_part = seq[0]  # central part idx
@@ -154,6 +169,13 @@ def eval_iou(decoded_seq_list, k=10):
             if max_iou_score > max_max_iou_score:
                 max_max_iou_score = max_iou_score
                 kept_a = aid
+
+            result["num_nodes"] = len(aid_to_part_indice_map[aid])
+            result["seq_length"] = 1 + len(n_parts_pred)
+            result["k"] = k
+            result["iou_score"] = max_iou_score
+
+            aid_result_map[aid].append(result)
         if kept_a is None:
             len_topk_a.append(0)
         else:
@@ -185,23 +207,36 @@ if __name__ == '__main__':
     print(f'Number of assemblies having contact information / included in the part graph: {len(valid_aid_list)}')
 
     # Sampled Fusion360 test set
-    all_decoded_seq_list = load_json('./model_outputs/rec_decoded_seq_list_3_random_1000.json')
+    all_decoded_seq_list = load_json('./model_outputs/rec_decoded_seq_list_3_100_disposed.json')
+
+    aid_result_map = init_map()
 
     res = []
-    k = 1
-    print(f'k={k}')
-    res.append(eval_iou(all_decoded_seq_list, k))
+    klist = [1, 5, 10]
+    for k in klist:
+        res.append(eval_iou(all_decoded_seq_list, k))
 
-    length_iou_map = dict()
-    for i, length in enumerate(res[0][2]):
-        if length not in length_iou_map:
-            length_iou_map[length] = []
-            length_iou_map[length].append(res[0][1][i])
-        else:
-            length_iou_map[length].append(res[0][1][i])
+    save_json(aid_result_map, './model_outputs/iou_by_assembly.json')
 
-    length_mean_iou_map = dict()
-    for length, iou_list in length_iou_map.items():
-        length_mean_iou_map[length] = sum(iou_list) / len(iou_list)
+    # res = []
+    # k = 1
+    # print(f'k={k}')
+    # res.append(eval_iou(all_decoded_seq_list, k))
+    #
+    # length_iou_map = dict()
+    # for i, length in enumerate(res[0][2]):
+    #     if length not in length_iou_map:
+    #         length_iou_map[length] = []
+    #         length_iou_map[length].append(res[0][1][i])
+    #     else:
+    #         length_iou_map[length].append(res[0][1][i])
+    #
+    # length_mean_iou_map = dict()
+    # for length, iou_list in length_iou_map.items():
+    #     length_mean_iou_map[length] = sum(iou_list) / len(iou_list)
+    #
+    # print(length_mean_iou_map)
+    # print(f'k = 1: avg_iou: {np.array(res[0][0]).mean()}, avg_iou_score: {np.array(res[0][1]).mean()}')
+    # # print(f'k = 5: avg_iou: {sum(res[1][0]) / len(res[1][0])}, avg_iou_score: {sum(res[1][1]) / len(res[1][1])}')
+    # # print(f'k = 10: avg_iou: {sum(res[2][0]) / len(res[2][0])}, avg_iou_score: {sum(res[2][1]) / len(res[2][1])}')
 
-    print(length_mean_iou_map)
