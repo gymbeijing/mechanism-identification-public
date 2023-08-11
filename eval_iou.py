@@ -225,7 +225,7 @@ if __name__ == '__main__':
     print(f'Number of assemblies having contact information / included in the part graph: {len(valid_aid_list)}')
 
     # Sampled Fusion360 test set
-    all_decoded_seq_list = load_json('./model_outputs/rec_decoded_seq_list_3_100_disposed.json')
+    all_decoded_seq_list = load_json('./model_outputs/rec_decoded_seq_list_3_1000_disposed.json')
 
     aid_result_map = init_map()
     result = dict()
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     #     length_mean_iou_map[length] = sum(iou_list) / len(iou_list)
     #
     # print(length_mean_iou_map)
-    # print(f'k = 1: avg_iou: {np.array(res[0][0]).mean()}, avg_iou_score: {np.array(res[0][1]).mean()}')
-    # print(f'k = 5: avg_iou: {sum(res[1][0]) / len(res[1][0])}, avg_iou_score: {sum(res[1][1]) / len(res[1][1])}')
-    # print(f'k = 10: avg_iou: {sum(res[2][0]) / len(res[2][0])}, avg_iou_score: {sum(res[2][1]) / len(res[2][1])}')
+    print(f'k = 1: avg_iou: {np.array(res[0][0]).mean()}, avg_iou_score: {np.array(res[0][1]).mean()}')
+    print(f'k = 5: avg_iou: {sum(res[1][0]) / len(res[1][0])}, avg_iou_score: {sum(res[1][1]) / len(res[1][1])}')
+    print(f'k = 10: avg_iou: {sum(res[2][0]) / len(res[2][0])}, avg_iou_score: {sum(res[2][1]) / len(res[2][1])}')
 
