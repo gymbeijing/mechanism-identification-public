@@ -30,9 +30,9 @@ def load_saved_tensor(filepath):
     return t
 
 
-def save_json(dict, path):
+def save_json(data, path):
     with open(path, 'w', encoding='utf8') as fp:
-        json.dump(dict, fp, indent=4, ensure_ascii=False, sort_keys=False)
+        json.dump(data, fp, indent=4, ensure_ascii=False, sort_keys=False)
 
     return
 
