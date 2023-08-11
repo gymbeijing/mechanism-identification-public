@@ -104,6 +104,6 @@ if __name__ == '__main__':
     rec_seq = torch.stack(rec_seq, dim=0)   # Has randomness because of the noise
     ori_seq = torch.stack(ori_seq, dim=0)
 
-    save_tensor(rec_seq, "./model_outputs/rec_seq_0801_161839_last.pt")
-    save_tensor(ori_seq, "./model_outputs/ori_seq_0801_161839_last.pt")
+    save_tensor(rec_seq, "./model_outputs/10_rec_seq/rec_seq_0801_161839_last_v10.pt")
+    # save_tensor(ori_seq, "./model_outputs/ori_seq_0801_161839_last.pt")
 
