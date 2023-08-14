@@ -35,6 +35,15 @@ def load_json(filename):
 def load_embeddings(file):
     return torch.load(file)
 
+def load_k_embeddings(folder, k=1):
+    files = list(folder.glob('*.pt'))
+    sampled_files = random.choices(files, k=k)
+    embedding_list = []
+    for file in sampled_files:
+        embedding_list.append(load_embeddings(file))
+
+    return embedding_list
+
 def iou_from_two_sets(a, b):
     intersection = a.intersection(b)
     union = b.union(b)

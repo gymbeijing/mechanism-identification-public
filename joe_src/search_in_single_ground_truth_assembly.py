@@ -106,7 +106,8 @@ def search_in_ground_truth_assembly(
         assembly_dataset, 
         metadata_pathname, 
         part_embeddings_file, 
-        sequence_embeddings_file, 
+        sequence_embeddings_folder,
+        k,
         sequence_central_nodes_file, 
         output
     ):
@@ -114,29 +115,21 @@ def search_in_ground_truth_assembly(
     metadata = load_json(metadata_pathname)
     graphs = make_all_graphs(assembly_dataset, metadata_pathname)
     part_embeddings = load_embeddings(part_embeddings_file)
-    sequence_embeddings = load_embeddings(sequence_embeddings_file)
+    sequence_embeddings_k = load_k_embeddings(sequence_embeddings_folder, k)
     sequence_central_nodes = load_json(sequence_central_nodes_file)  
 
     assert part_embeddings.shape[0] == len(metadata), "Should have metadata for each body"
-    assert len(sequence_central_nodes) == sequence_embeddings.shape[0], "Should have data for each embedding"
+    assert len(sequence_central_nodes) == sequence_embeddings_k[0].shape[0], "Should have data for each embedding"
 
     # Look up table for going from bodies to the indices of the embeddings
     body_to_index, index_to_body = make_body_to_index(metadata)
     assembly_node_lists = make_assembly_node_lists(graphs, body_to_index)
     results = []
-    for index, seq_central_node_info in enumerate(tqdm(sequence_central_nodes)):
-        seq_embedding = sequence_embeddings[index]
-        seq_len = find_sequence_length(seq_embedding)
-        seq_embedding = seq_embedding[:seq_len]
 
+    for index, seq_central_node_info in enumerate(tqdm(sequence_central_nodes)):
+        sub_result = []
         assembly_id = seq_central_node_info["aid"]
         graph = graphs[assembly_id]
-
-        if graph.number_of_nodes() < seq_len:
-            # In this case we can't match the assembly to the
-            # predicted parts
-            continue
-
 
         check_assembly_id, central_body_id = split_meta_string(seq_central_node_info["c_part_md"])
         assert check_assembly_id == assembly_id, "Should have same assembly id"
@@ -144,20 +137,37 @@ def search_in_ground_truth_assembly(
         assembly_node_list = assembly_node_lists[assembly_id]
         assembly_nodes_without_central_node = assembly_node_list[assembly_node_list != central_node_index]
         assert assembly_nodes_without_central_node.shape[0] == assembly_node_list.shape[0] - 1, "Should remove just 1"
-        matching_neighboring_bodies, mean_dist = find_best_matching_bodies(seq_embedding[1:], part_embeddings, assembly_nodes_without_central_node, index_to_body)
+        for i in range(k):
+            sequence_embeddings = sequence_embeddings_k[i]
+            seq_embedding = sequence_embeddings[index]
+            seq_len = find_sequence_length(seq_embedding)
+            seq_embedding = seq_embedding[:seq_len]
 
-        iou_network = find_network_iou(central_body_id, matching_neighboring_bodies, graph)
-        iou_random = find_random_iou(central_body_id, len(matching_neighboring_bodies), graph)
+            if graph.number_of_nodes() < seq_len:
+                # In this case we can't match the assembly to the
+                # predicted parts
+                continue
+
+            matching_neighboring_bodies, mean_dist = find_best_matching_bodies(seq_embedding[1:], part_embeddings, assembly_nodes_without_central_node, index_to_body)
+
+            iou_network = find_network_iou(central_body_id, matching_neighboring_bodies, graph)
+            iou_random = find_random_iou(central_body_id, len(matching_neighboring_bodies), graph)
+            sub_sequence_data = {
+                "k": i,
+                "matching_neighboring_bodies": matching_neighboring_bodies,
+                "dist": mean_dist.item(),
+                "iou_network": iou_network,
+                "random_baseline_iou": iou_random
+            }
+            sub_result.append(sub_sequence_data)
+
         sequence_data = {
             "sequence_index": index,
             "central_body_id": central_body_id,
-            "matching_neighboring_bodies": matching_neighboring_bodies,
+            "matching_neighbouring_bodies_k": sub_result,
             "assembly_id": assembly_id,
             "assembly_num_bodies": graph.number_of_nodes(),
-            "assembly_num_contacts": graph.number_of_edges(),
-            "dist": mean_dist.item(),
-            "iou_network": iou_network,
-            "random_baseline_iou": iou_random
+            "assembly_num_contacts": graph.number_of_edges()
         }
         results.append(sequence_data)
         
@@ -169,7 +179,9 @@ def parse_args():
     p.add_argument("--assembly_dataset", type=str, required=True, help="json files containing assemblies")
     p.add_argument("--metadata", type=str, required=True, help="Metadata telling us what assemblies to include")
     p.add_argument("--part_embeddings", type=str, required=True, help="Embeddings of each part")
-    p.add_argument("--sequence_embeddings", type=str, required=True, help="Embeddings of generated sequence")
+    # p.add_argument("--sequence_embeddings", type=str, required=True, help="Embeddings of generated sequence")
+    p.add_argument("--sequence_embeddings_folder", type=str, required=True, help="Folder to the embeddings of generated sequence")
+    p.add_argument("--k", type=int, required=True, help="Evaluated on k sequences")
     p.add_argument("--sequence_central_nodes", type=str, required=True, help="Assembly and central nodes for each embedding")
     p.add_argument("--output", type=str, required=True, help="Output json file")
     
@@ -183,7 +195,9 @@ if __name__ == "__main__":
     metadata = Path(args.metadata)
     output = Path(args.output)
     part_embeddings = Path(args.part_embeddings)
-    sequence_embeddings = Path(args.sequence_embeddings)
+    # sequence_embeddings = Path(args.sequence_embeddings)
+    sequence_embeddings_folder = Path(args.sequence_embeddings_folder)
+    k = args.k
     sequence_central_nodes = Path(args.sequence_central_nodes)
     
-    search_in_ground_truth_assembly(assembly_dataset, metadata, part_embeddings, sequence_embeddings, sequence_central_nodes, output)
+    search_in_ground_truth_assembly(assembly_dataset, metadata, part_embeddings, sequence_embeddings_folder, k, sequence_central_nodes, output)
