@@ -6,6 +6,7 @@ import json
 from collections import defaultdict
 from tqdm import tqdm
 import pickle
+from joe_src.utils import *
     
 def add_nodes(G, assembly_data, bodies):
     for b in assembly_data["bodies"]:
@@ -39,6 +40,10 @@ def make_graph(assembly_json, bodies):
     if G.number_of_edges() == 0:
         return None
     return G
+
+def get_assembly_uuid(fullname):
+    uuid = '_'.join(fullname.split('_')[:2])
+    return uuid
     
 def make_all_graphs(assembly_dataset, metadata_pathname):
     cache_file = assembly_dataset.parent / "graph_cache.p"
@@ -50,9 +55,9 @@ def make_all_graphs(assembly_dataset, metadata_pathname):
     assemblies = assemblies_and_bodies(metadata)
 
     assembly_graphs = {}
-    assembly_files = list(assembly_dataset.glob("**/assembly.json"))
+    assembly_files = list(assembly_dataset.glob("*_assembly.json"))
     for assembly_file in tqdm(assembly_files):
-        assembly_uuid = assembly_file.parent.stem
+        assembly_uuid = get_assembly_uuid(assembly_file.stem)
         if assembly_uuid in assemblies:
             bodies = assemblies[assembly_uuid]
             graph = make_graph(assembly_file, bodies)
@@ -60,6 +65,6 @@ def make_all_graphs(assembly_dataset, metadata_pathname):
                 assembly_graphs[assembly_uuid] = graph
             
     with open(cache_file, "wb") as fp:
-        return pickle.dump(assembly_graphs, fp)
+        pickle.dump(assembly_graphs, fp)
         
     return assembly_graphs
