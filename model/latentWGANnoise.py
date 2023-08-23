@@ -12,7 +12,7 @@ class Generator(nn.Module):
         super().__init__()
         self.generator = nn.Sequential(
             # nn.Linear(n_dim, h_dim),   # w/o central part's emb
-            nn.Linear(n_dim + z_dim, h_dim),   # w/ central part's emb
+            nn.Linear(z_dim, h_dim),   # w/ noise
             nn.LeakyReLU(),
             nn.Linear(h_dim, h_dim),
             nn.LeakyReLU(),
@@ -139,12 +139,8 @@ class WGAN(pl.LightningModule):
         self.manual_backward(D_real * mone)   # we want to max. D_real, which is equivalent to min. -D_real
 
         # Generate samples
-        # Sample noise
-        noise = torch.randn(bs, self.n_dim)
-        noise = noise.type_as(real_data)
-        noise = torch.cat((rand_c_emb, noise), 1)  # [bs, n_dim+z_dim], append the central part's emb to the front
         # Generate fake data
-        fake_data = self.G(noise)
+        fake_data = self.G(rand_c_emb)   #[bs, z_dim]
 
         # Train with fake
         self.fake_z.append(fake_data)
@@ -170,12 +166,8 @@ class WGAN(pl.LightningModule):
         self.toggle_optimizer(optimizer_g)   # parameters in all the other optimizers are set to requires_grad=False
         self.G.zero_grad()
         # Re-generate the noise
-        noise = torch.randn(bs, self.n_dim)
-        noise = noise.type_as(real_data)
-        noise = torch.cat((rand_c_emb, noise), 1)  # [bs, n_dim+z_dim], append the central part's emb to the front
-        noise.requires_grad_(True)  # necessary?
         # Re-generate fake data
-        fake_data = self.G(noise)
+        fake_data = self.G(rand_c_emb)
 
         # Train with fake (generated samples)
         G = self.D(fake_data)
@@ -218,11 +210,9 @@ class WGAN(pl.LightningModule):
         real_data = real_data.view(real_data.size(0), -1)
         bs = real_data.shape[0]
 
-        noise = torch.randn(bs, self.n_dim)
-        noise = noise.type_as(real_data)
-        noise = torch.cat((rand_c_emb, noise), 1)  # [bs, n_dim+z_dim], append the central part's emb to the front
+
         # Generate fake data
-        fake_data = self.G(noise)
+        fake_data = self.G(rand_c_emb)
         self.val_fake_z.append(fake_data)
         self.val_real_z.append(real_data)
 
