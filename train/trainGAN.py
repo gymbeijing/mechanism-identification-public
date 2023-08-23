@@ -2,7 +2,8 @@ from config.configGAN import ConfigGAN
 from data.lgan_dataset import get_dataloader
 from model.latentGAN import GAN
 # from model.latentWGAN import WGAN
-from model.latentWGANmse import WGAN
+# from model.latentWGANmse import WGAN
+from model.latentWGANnoise import WGAN
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import time
