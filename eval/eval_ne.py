@@ -5,7 +5,8 @@ from config.configGAN import ConfigGAN
 from model.latentWGANnoise import WGAN
 from data.lgan_dataset import get_dataloader as get_dataloader_for_gan
 import torch
-from model.autoencoder import AutoEncoder
+# from model.autoencoder import AutoEncoder
+from model.neighbourencoder import NeighbourEncoder
 from config.configAE import ConfigAE
 from data.ae_dataset import get_dataloader_from_tensor as get_dataloader_for_ae_decoder
 from data.ae_dataset import get_dataloader as get_dataloader_for_ae
@@ -33,56 +34,24 @@ def save_tensor(t, dest):
 
 if __name__ == '__main__':
     # Load in checkpoints
-    # gan_ckpt_file = 'lightning_logs/0718/105055/checkpoints/best_gan.ckpt'
-    # gan_ckpt_file = 'lightning_logs/0724/204251/checkpoints/best_gan-v9.ckpt'   # WGAN
-    # gan_ckpt_file = 'lightning_logs/0801/161839/checkpoints/last.ckpt'  # WGAN w/ mse
-    gan_ckpt_file = 'lightning_logs/0823/110503/checkpoints/last.ckpt'  # WGAN w/ mse w/o noise
-    gan_cfg = ConfigGAN('test')
-    gan = WGAN.load_from_checkpoint(gan_ckpt_file, cfg=gan_cfg)
-    gan.eval()
-    # Load in test loader for (W)GAN
-    test_loader_for_gan = get_dataloader_for_gan(gan_cfg)
 
-    ae_ckpt_file = 'lightning_logs/0717/170857/checkpoints/best.ckpt'
+    ae_ckpt_file = 'lightning_logs/0823/161410/checkpoints/best.ckpt'
     ae_cfg = ConfigAE('test')
-    ae = AutoEncoder.load_from_checkpoint(ae_ckpt_file, cfg=ae_cfg)
+    ae = NeighbourEncoder.load_from_checkpoint(ae_ckpt_file, cfg=ae_cfg)
     ae.eval()
 
-    # Generate z_hat from central part + noise
-    batch_z_hat = []
-    batch_z = []   # not used
-    for batch_idx, batch in enumerate(test_loader_for_gan):
-        real_z, c_emb = batch
-        real_z = real_z.view(real_z.size(0), -1)
-        batch_z.append(real_z)
-
-        # # Sample noise
-        # bs = real_z.shape[0]
-        # noise = torch.randn(bs, gan_cfg.n_dim)
-        # # Append central part embedding
-        # noise = torch.cat((c_emb, noise), 1)   # [bs, n_dim+z_dim]
-
-        ### central embedding only ###
-        noise = c_emb
-        ##############################
-        z_hat = gan.forward(noise.cuda())
-        batch_z_hat.append(z_hat)
-
-    all_z_hat = torch.cat(batch_z_hat, dim=0)
-    all_z = torch.cat(batch_z, dim=0)
-    print(all_z_hat.shape)   # [10377, 512]
-    assert all_z_hat.shape == all_z.shape, "all_z_hat and all_z are not having the same shape"
-
     # Input generated z_hat to the trained Decoder in AE
-    test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
+    # test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
     # test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z, ae_cfg)
     test_loader_for_ae = get_dataloader_for_ae('test', ae_cfg)   # input
 
     # Store the predicted sequence for each data point
     rec_seq = []
     rec_norm = []
-    for batch_idx, batch in enumerate(test_loader_for_ae_decoder):
-        out = ae.decode(batch[0].cuda())   # batch is a len=1 list (inp, tgt?), out has the shape of [bs, 5120]
+    for batch_idx, batch in enumerate(test_loader_for_ae):
+        batch_seq, batch_mask = batch
+        batch_c = batch_seq[:, :512]
+        out = ae.forward(batch_c.cuda())   # batch is a len=1 list (inp, tgt?), out has the shape of [bs, 5120]
         # print(out.shape)
         bs = out.shape[0]
         for i in range(bs):
@@ -103,12 +72,12 @@ if __name__ == '__main__':
             ori_seq.append(input_seq)
 
     # normalization in need for rec_seq? think not
-    sim_scores = compute_cosine_similarity(rec_seq, ori_seq)
+    # sim_scores = compute_cosine_similarity(rec_seq, ori_seq)
     # print(sim_scores[0])   # Mode collapse encountered. Mode collapse fixed by introducing WGAN.
 
     rec_seq = torch.stack(rec_seq, dim=0)   # Has randomness because of the noise
     ori_seq = torch.stack(ori_seq, dim=0)
 
-    save_tensor(rec_seq, "./model_outputs/rec_seq_0823_110503_last.pt")
-    save_tensor(ori_seq, "./model_outputs/ori_seq_0823_110503_last.pt")
+    save_tensor(rec_seq, "./model_outputs/rec_seq_0823_161410_last.pt")
+    save_tensor(ori_seq, "./model_outputs/ori_seq_0823_161410_last.pt")
 

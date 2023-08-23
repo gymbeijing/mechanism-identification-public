@@ -11,8 +11,10 @@ class NeighbourEncoder(pl.LightningModule):
 		super().__init__()
 		self.decoder = nn.Sequential(
 			nn.Linear(cfg.dim_z, cfg.dim_emb//4),   # 512 -> 1280
+			nn.Dropout(0.2),
 			nn.LeakyReLU(),
 			nn.Linear(cfg.dim_emb//4, cfg.dim_emb//2),   # 1280 -> 2560
+			nn.Dropout(0.2),
 			nn.LeakyReLU(),
 			nn.Linear(cfg.dim_emb//2, cfg.dim_emb),   # 2560 -> 5120
 		)
