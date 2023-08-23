@@ -1,6 +1,6 @@
 from config.configAE import ConfigAE
 from data.ae_dataset import get_dataloader
-from model.autoencoder import AutoEncoder
+from model.neighbourencoder import NeighbourEncoder
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import time
@@ -10,7 +10,7 @@ from pathlib import Path
 
 def main():
     cfg = ConfigAE('train')
-    model = AutoEncoder(cfg)
+    model = NeighbourEncoder(cfg)
 
     # Configure the tensorboard logger
     month_day = time.strftime('%m%d')
