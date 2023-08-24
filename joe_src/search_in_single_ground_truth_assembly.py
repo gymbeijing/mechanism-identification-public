@@ -129,6 +129,10 @@ def search_in_ground_truth_assembly(
     for index, seq_central_node_info in enumerate(tqdm(sequence_central_nodes)):
         sub_result = []
         assembly_id = seq_central_node_info["aid"]
+        # Temporary fix #
+        if assembly_id not in graphs:
+            continue
+        #################
         graph = graphs[assembly_id]
 
         check_assembly_id, central_body_id = split_meta_string(seq_central_node_info["c_part_md"])

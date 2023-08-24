@@ -10,6 +10,7 @@ from pathlib import Path
 
 def main():
     cfg = ConfigAE('train')
+    print(f"Dropout rate: {cfg.args.dropout}")
     model = NeighbourEncoder(cfg)
 
     # Configure the tensorboard logger
@@ -23,6 +24,7 @@ def main():
     ckpt_path = log_dir/"checkpoints"
     checkpoint_callback = ModelCheckpoint(dirpath=ckpt_path,
                                           filename="best",
+                                          save_last=True,
                                           save_top_k=1,
                                           verbose=True,
                                           monitor="mean_val_loss")

@@ -35,7 +35,7 @@ def save_tensor(t, dest):
 if __name__ == '__main__':
     # Load in checkpoints
 
-    ae_ckpt_file = 'lightning_logs/0823/161410/checkpoints/best.ckpt'
+    ae_ckpt_file = 'lightning_logs/0824/135617/checkpoints/last.ckpt'
     ae_cfg = ConfigAE('test')
     ae = NeighbourEncoder.load_from_checkpoint(ae_ckpt_file, cfg=ae_cfg)
     ae.eval()
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # Input generated z_hat to the trained Decoder in AE
     # test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z_hat, ae_cfg)
     # test_loader_for_ae_decoder = get_dataloader_for_ae_decoder(all_z, ae_cfg)
-    test_loader_for_ae = get_dataloader_for_ae('test', ae_cfg)   # input
+    test_loader_for_ae = get_dataloader_for_ae('train', ae_cfg)   # input
 
     # Store the predicted sequence for each data point
     rec_seq = []
@@ -78,6 +78,6 @@ if __name__ == '__main__':
     rec_seq = torch.stack(rec_seq, dim=0)   # Has randomness because of the noise
     ori_seq = torch.stack(ori_seq, dim=0)
 
-    save_tensor(rec_seq, "./model_outputs/rec_seq_0823_161410_last.pt")
-    save_tensor(ori_seq, "./model_outputs/ori_seq_0823_161410_last.pt")
+    save_tensor(rec_seq, "./model_outputs/rec_seq_0824_135617_last_train.pt")
+    save_tensor(ori_seq, "./model_outputs/ori_seq_0824_135617_last_train.pt")
 

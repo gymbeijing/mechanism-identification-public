@@ -25,6 +25,7 @@ class ConfigAE(object):
 		parser.add_argument('--n_neighbour', type=int, default=9, help="number of neighbouring parts for each central part")
 		####### of no use, just a temporary fix for the bash script running problem
 		parser.add_argument('--mse_lambda', type=int, default=1, help="weights for the mse loss")
+		parser.add_argument('--dropout', type=float, default=0, help='Dropout rate')
 
 		args = parser.parse_args()
 		return parser, args
