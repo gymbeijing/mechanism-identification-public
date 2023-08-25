@@ -144,6 +144,10 @@ def search_in_ground_truth_assembly(
         for i in range(k):
             sequence_embeddings = sequence_embeddings_k[i]
             seq_embedding = sequence_embeddings[index]
+            ### temporary fix ###
+            if torch.all(seq_embedding == 0.0):
+                continue
+            ###
             seq_len = find_sequence_length(seq_embedding)
             seq_embedding = seq_embedding[:seq_len]
 
