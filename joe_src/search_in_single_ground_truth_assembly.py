@@ -109,17 +109,21 @@ def search_in_ground_truth_assembly(
         sequence_embeddings_folder,
         k,
         sequence_central_nodes_file, 
-        output
+        output,
+        none_indices_file
     ):
     # Load the data
     metadata = load_json(metadata_pathname)
     graphs = make_all_graphs(assembly_dataset, metadata_pathname)
     part_embeddings = load_embeddings(part_embeddings_file)
     sequence_embeddings_k = load_k_embeddings(sequence_embeddings_folder, k)
-    sequence_central_nodes = load_json(sequence_central_nodes_file)  
+    sequence_central_nodes = load_json(sequence_central_nodes_file)
+    ### For checking ~seen query only ###
+    none_indices = load_json(none_indices_file)["None"]
+    #####################################
 
     assert part_embeddings.shape[0] == len(metadata), "Should have metadata for each body"
-    assert len(sequence_central_nodes) == sequence_embeddings_k[0].shape[0], "Should have data for each embedding"
+    assert len(sequence_central_nodes) == sequence_embeddings_k[0].shape[0], "Should have data for each embedding"""
 
     # Look up table for going from bodies to the indices of the embeddings
     body_to_index, index_to_body = make_body_to_index(metadata)
@@ -127,11 +131,15 @@ def search_in_ground_truth_assembly(
     results = []
 
     for index, seq_central_node_info in enumerate(tqdm(sequence_central_nodes)):
+        ### For checking ~seen query only ###
+        if index in none_indices:
+            continue
+        #####################################
         sub_result = []
         assembly_id = seq_central_node_info["aid"]
-        # Temporary fix #
-        if assembly_id not in graphs:
-            continue
+        # Temporary fix for the assembly_id not found in graphs while testing network's perf on the training set #
+        # if assembly_id not in graphs:
+        #     continue
         #################
         graph = graphs[assembly_id]
 
@@ -142,11 +150,11 @@ def search_in_ground_truth_assembly(
         assembly_nodes_without_central_node = assembly_node_list[assembly_node_list != central_node_index]
         assert assembly_nodes_without_central_node.shape[0] == assembly_node_list.shape[0] - 1, "Should remove just 1"
         for i in range(k):
-            sequence_embeddings = sequence_embeddings_k[i]
-            seq_embedding = sequence_embeddings[index]
-            ### temporary fix ###
-            if torch.all(seq_embedding == 0.0):
-                continue
+            sequence_embeddings = sequence_embeddings_k[i]   # sequence_embeddings_k: a list of decoded sequences kx[10377, 10, 512], sequence_embeddings: the i-th/k decoded sequence [10377, 5120]
+            seq_embedding = sequence_embeddings[index]   # the sequence embedding corresponds to the index-th part query
+            ### temporary fix ### if there is no ~seen central part, it will break when i=0
+            # if torch.all(seq_embedding == 0.0):
+            #     continue   # should be break? doesn't matter for k=1
             ###
             seq_len = find_sequence_length(seq_embedding)
             seq_embedding = seq_embedding[:seq_len]
@@ -192,6 +200,9 @@ def parse_args():
     p.add_argument("--k", type=int, required=True, help="Evaluated on k sequences")
     p.add_argument("--sequence_central_nodes", type=str, required=True, help="Assembly and central nodes for each embedding")
     p.add_argument("--output", type=str, required=True, help="Output json file")
+    ### For checking ~seen query only ###
+    p.add_argument("--none_indices", type=str, help="Json file that stores a list of indices that don't have kin parts in the training set")
+    #####################################
     
     args = p.parse_args()
     return args
@@ -207,5 +218,9 @@ if __name__ == "__main__":
     sequence_embeddings_folder = Path(args.sequence_embeddings_folder)
     k = args.k
     sequence_central_nodes = Path(args.sequence_central_nodes)
+    ### For checking ~seen query only ###
+    none_indices = Path(args.none_indices)
+    #####################################
+
     
-    search_in_ground_truth_assembly(assembly_dataset, metadata, part_embeddings, sequence_embeddings_folder, k, sequence_central_nodes, output)
+    search_in_ground_truth_assembly(assembly_dataset, metadata, part_embeddings, sequence_embeddings_folder, k, sequence_central_nodes, output, none_indices)
