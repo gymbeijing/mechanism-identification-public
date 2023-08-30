@@ -111,6 +111,8 @@ def search_in_ground_truth_assembly(
         sequence_central_nodes_file, 
         output,
         none_indices_file,
+        retrieved_assembly_ids_file,
+        retrieved_central_ids_file
     ):
     # Load the data
     metadata = load_json(metadata_pathname)
@@ -120,6 +122,8 @@ def search_in_ground_truth_assembly(
     sequence_central_nodes = load_json(sequence_central_nodes_file)
     ### For checking ~seen query only ###
     none_indices = load_json(none_indices_file)["None"]
+    retrieved_assembly_ids = load_json(retrieved_assembly_ids_file)["assembly_ids_train"]
+    retrieved_central_ids = load_json(retrieved_central_ids_file)["central_ids_train"]
     #####################################
 
     assert part_embeddings.shape[0] == len(metadata), "Should have metadata for each body"
@@ -144,11 +148,11 @@ def search_in_ground_truth_assembly(
         #################
         graph = graphs[assembly_id]
 
-        check_assembly_id, central_body_id = split_meta_string(seq_central_node_info["c_part_md"])
-        assert check_assembly_id == assembly_id, "Should have same assembly id"
-        central_node_index = body_to_index[central_body_id]
-        # central_node_index = retrieved_central_ids[index]
-        # central_body_id = index_to_body[central_node_index]
+        # check_assembly_id, central_body_id = split_meta_string(seq_central_node_info["c_part_md"])
+        # assert check_assembly_id == assembly_id, "Should have same assembly id"
+        # central_node_index = body_to_index[central_body_id]
+        central_node_index = retrieved_central_ids[index]
+        central_body_id = index_to_body[central_node_index]
         assembly_node_list = assembly_node_lists[assembly_id]
         assembly_nodes_without_central_node = assembly_node_list[assembly_node_list != central_node_index]
         assert assembly_nodes_without_central_node.shape[0] == assembly_node_list.shape[0] - 1, "Should remove just 1"
@@ -205,10 +209,10 @@ def parse_args():
     p.add_argument("--output", type=str, required=True, help="Output json file")
     ### For checking ~seen query only ###
     p.add_argument("--none_indices", type=str, help="Json file that stores a list of indices that don't have kin parts in the training set")
-    # p.add_argument("--retrieved_assembly_ids", type=str,
-    #                help="Json file that stores the retrieved assembly ids from the training set")
-    # p.add_argument("--retrieved_central_ids", type=str,
-    #                help="Json file that stores the retrieved central part ids from the training set")
+    p.add_argument("--retrieved_assembly_ids", type=str,
+                   help="Json file that stores the retrieved assembly ids from the training set")
+    p.add_argument("--retrieved_central_ids", type=str,
+                   help="Json file that stores the retrieved central part ids from the training set")
     #####################################
     
     args = p.parse_args()
@@ -227,7 +231,10 @@ if __name__ == "__main__":
     sequence_central_nodes = Path(args.sequence_central_nodes)
     ### For checking ~seen query only ###
     none_indices = Path(args.none_indices)
+    retrieved_assembly_ids = Path(args.retrieved_assembly_ids)
+    retrieved_central_ids = Path(args.retrieved_central_ids)
     #####################################
 
     search_in_ground_truth_assembly(assembly_dataset, metadata, part_embeddings, sequence_embeddings_folder, k,
-                                    sequence_central_nodes, output, none_indices)
+                                    sequence_central_nodes, output, none_indices, retrieved_assembly_ids,
+                                    retrieved_central_ids)

@@ -85,7 +85,7 @@ def get_assembly_ids_and_central_ids(in_list):
             assembly_id_list.append(None)
             central_id_list.append(None)
         else:
-            assembly_id_list.append('_'.join(all_md[tensor.item()].split('_')[1:3]))
+            assembly_id_list.append('_'.join(all_md[tensor.item()].split('_')[1:3]))   # incorrect: tensor.item() stores the id from [0, 42919)
             central_id_list.append(tensor.item())
 
     return assembly_id_list, central_id_list
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     decoded_sequences = get_decoded_sequences(seq_emb_train, retrieved_indices_list, k)
 
     for i in range(k):
-        dest = os.path.join(args.output_folder, f"retrieve_seq_{i}_thrid_run.pt")
+        dest = os.path.join(args.output_folder, f"retrieve_seq_{i}.pt")
         assert decoded_sequences[i].shape == torch.Size([10377, 10, 512])
         save_tensor(decoded_sequences[i], dest)
 
