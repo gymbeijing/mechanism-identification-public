@@ -77,6 +77,20 @@ def get_none_indices(in_list):
     return out_list
 
 
+def get_assembly_ids_and_central_ids(in_list):
+    assembly_id_list = []
+    central_id_list = []
+    for tensor in in_list:
+        if tensor is None:
+            assembly_id_list.append(None)
+            central_id_list.append(None)
+        else:
+            assembly_id_list.append('_'.join(all_md[tensor.item()].split('_')[1:3]))
+            central_id_list.append(tensor.item())
+
+    return assembly_id_list, central_id_list
+
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--train_test", type=str, default="../raw_data/train_test.json", required=True,
@@ -91,6 +105,8 @@ def parse_args():
                    help="Radius of the epsilon ball")
     p.add_argument("--output_folder", type=str, default="../model_outputs/1_retrieve_seq/", required=True,
                    help="Folder to the output .pt files")
+    p.add_argument("--metadata", type=str, default="../processed_data/emb_idx_filtered.json", required=True,
+                   help="Json file that stores all metadata")
 
     args = p.parse_args()
     return args
@@ -98,6 +114,9 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+
+    all_md_path = Path(args.metadata)
+    all_md = load_json(all_md_path)
 
     train_test_path = Path(args.train_test)
     train_test = load_json(train_test_path)
@@ -116,17 +135,21 @@ if __name__ == '__main__':
     k = args.k
     retrieved_indices_list = retrieve_sequence_indices(c_emb_test, c_emb_train, eps, k)   # 10377
 
+    assembly_ids, central_ids = get_assembly_ids_and_central_ids(retrieved_indices_list)
+    save_json({"assembly_ids_train": assembly_ids}, "../model_outputs/retrieved_assembly_ids.json")
+    save_json({"central_ids_train": central_ids}, "../model_outputs/retrieved_central_ids.json")
+
     none_indices_list = get_none_indices(retrieved_indices_list)
     print(len(none_indices_list))
 
-    save_json({"None": none_indices_list}, "../model_outputs/none_indices_in_test.json")
+    # save_json({"None": none_indices_list}, "../model_outputs/none_indices_in_test.json")
 
-    # decoded_sequences = get_decoded_sequences(seq_emb_train, retrieved_indices_list, k)
-    #
-    # for i in range(k):
-    #     dest = os.path.join(args.output_folder, f"retrieve_seq_{i}.pt")
-    #     assert decoded_sequences[i].shape == torch.Size([10377, 10, 512])
-    #     save_tensor(decoded_sequences[i], dest)
+    decoded_sequences = get_decoded_sequences(seq_emb_train, retrieved_indices_list, k)
+
+    for i in range(k):
+        dest = os.path.join(args.output_folder, f"retrieve_seq_{i}_thrid_run.pt")
+        assert decoded_sequences[i].shape == torch.Size([10377, 10, 512])
+        save_tensor(decoded_sequences[i], dest)
 
 
 
