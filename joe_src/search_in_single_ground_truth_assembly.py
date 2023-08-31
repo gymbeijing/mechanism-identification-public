@@ -140,8 +140,8 @@ def search_in_ground_truth_assembly(
             continue
         #####################################
         sub_result = []
-        assembly_id = seq_central_node_info["aid"]
-        # assembly_id = retrieved_assembly_ids[index]
+        # assembly_id = seq_central_node_info["aid"]
+        assembly_id = retrieved_assembly_ids[index]
         # Temporary fix for the assembly_id not found in graphs while testing network's perf on the training set #
         if assembly_id not in graphs:
             continue

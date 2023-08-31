@@ -12,8 +12,8 @@ from collections import defaultdict
 import numpy as np
 import torch
 
-from src.build_graphs import make_all_graphs, load_json, split_meta_string
-from src.utils import *
+from joe_src.build_graphs import make_all_graphs, load_json, split_meta_string
+from joe_src.utils import *
 
 
 

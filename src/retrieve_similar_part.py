@@ -85,8 +85,8 @@ def get_assembly_ids_and_central_ids(in_list):
             assembly_id_list.append(None)
             central_id_list.append(None)
         else:
-            assembly_id_list.append('_'.join(all_md[tensor.item()].split('_')[1:3]))   # incorrect: tensor.item() stores the id from [0, 42919)
-            central_id_list.append(tensor.item())
+            assembly_id_list.append(aid_list[tensor.item()])   # incorrect: tensor.item() stores the id from [0, 42919)
+            central_id_list.append(cid_list[tensor.item()])   # we need the central_id in metadata index, not in [0, 42919)
 
     return assembly_id_list, central_id_list
 
@@ -107,6 +107,10 @@ def parse_args():
                    help="Folder to the output .pt files")
     p.add_argument("--metadata", type=str, default="../processed_data/emb_idx_filtered.json", required=True,
                    help="Json file that stores all metadata")
+    p.add_argument("--aid_list", type=str, default="../processed_data/aid_train.json", required=True,
+                   help="Json file that stores assembly ids")
+    p.add_argument("--cid_list", type=str, default="../processed_data/cid_train.json", required=True,
+                   help="Json file that stores central part indices")
 
     args = p.parse_args()
     return args
@@ -122,7 +126,7 @@ if __name__ == '__main__':
     train_test = load_json(train_test_path)
 
     seq_emb_train_path = Path(args.seq_emb_train)
-    seq_emb_train = load_tensor(seq_emb_train_path)   # [42919, 10, 512] shuffled, shuffled or not doesn't matter
+    seq_emb_train = load_tensor(seq_emb_train_path)   # [42919, 10, 512] shuffled, shuffled or not doesn't matter; does matter
 
     # Get all c in train
     c_emb_train = get_c_emb(seq_emb_train)   # [42919, 512]
@@ -130,6 +134,12 @@ if __name__ == '__main__':
     # Get all c in test
     c_emb_test_path = Path(args.c_emb_test)   # unshuffled
     c_emb_test = load_tensor(c_emb_test_path)   # [10377, 512]
+
+    aid_list_path = Path(args.aid_list)
+    aid_list = load_json(aid_list_path)
+
+    cid_list_path = Path(args.cid_list)
+    cid_list = load_json(cid_list_path)
 
     eps = args.eps
     k = args.k
@@ -147,7 +157,7 @@ if __name__ == '__main__':
     decoded_sequences = get_decoded_sequences(seq_emb_train, retrieved_indices_list, k)
 
     for i in range(k):
-        dest = os.path.join(args.output_folder, f"retrieve_seq_{i}.pt")
+        dest = os.path.join(args.output_folder, f"retrieve_seq_{i}_third_run.pt")
         assert decoded_sequences[i].shape == torch.Size([10377, 10, 512])
         save_tensor(decoded_sequences[i], dest)
 
